@@ -1,0 +1,28 @@
+{
+  "expectedPages": 88,
+  "errors": [],
+  "compactPages": [
+    "page-2",
+    "page-3",
+    "page-20",
+    "page-50"
+  ],
+  "offline": true,
+  "overflow": [],
+  "linksChecked": 101,
+  "schemaTables": 22,
+  "schemaColumns": 162,
+  "pdfPages": 88,
+  "mediaBoxes": [
+    "0 0 594.95996 841.91998",
+    "0 0 1191.12 841.91998"
+  ],
+  "pdfBytes": 1886759,
+  "contactSheets": [
+    "contact-01.png",
+    "contact-02.png",
+    "contact-03.png",
+    "contact-04.png",
+    "contact-05.png"
+  ]
+}

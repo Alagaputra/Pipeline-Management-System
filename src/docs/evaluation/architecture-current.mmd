@@ -1,0 +1,8 @@
+flowchart LR
+    pic["PIC atau Head Funding"] --> vue["Vue.js dan Vue Router"]
+    vue --> charts["Chart.js: batang, doughnut, dan garis"]
+    vue <--> api["Laravel REST API: Sanctum, validasi, otorisasi"]
+    api <--> pg["PostgreSQL: pipeline, PIC, produk, target tahunan, audit"]
+    api --> reports["DashboardReport: ringkasan dan tren berdasarkan divisi/tahun"]
+    reports --> charts
+    vue <--> token["Browser: token sesi"]

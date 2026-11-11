@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Active
+    Active --> Active: Edit atau follow-up
+    Active --> Won: Tanggal valid dan realisasi positif
+    Active --> Lost: Tanggal valid dan alasan terisi
+    Won --> [*]
+    Lost --> [*]

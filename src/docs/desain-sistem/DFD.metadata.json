@@ -1,0 +1,38 @@
+{
+  "width": 3360,
+  "height": 2380,
+  "revision": "02",
+  "notation": "Gane–Sarson",
+  "level1Processes": 5,
+  "level2Processes": 5,
+  "level3Processes": 5,
+  "level3Parent": "3.5",
+  "level3Stores": [
+    "D1",
+    "D2",
+    "D3",
+    "D5"
+  ],
+  "logicalStores": {
+    "D1": [
+      "Akun dan token",
+      "users; personal_access_tokens"
+    ],
+    "D2": [
+      "Referensi bisnis",
+      "divisions; products; division_products; target_scopes"
+    ],
+    "D3": [
+      "Peluang dan penugasan",
+      "opportunities; opportunity_assignments"
+    ],
+    "D4": [
+      "Target dan realisasi layanan",
+      "annual_targets; monthly_targets; unit_realizations; branch_targets"
+    ],
+    "D5": [
+      "Riwayat perubahan",
+      "audit_events"
+    ]
+  }
+}

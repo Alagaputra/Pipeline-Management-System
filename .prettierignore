@@ -1,0 +1,12 @@
+node_modules
+dist
+test-results
+package-lock.json
+Figma
+Icon
+arsip-lokal
+.runtime
+backups
+.ui-review
+__pycache__
+src/docs/materi-ujian/previews

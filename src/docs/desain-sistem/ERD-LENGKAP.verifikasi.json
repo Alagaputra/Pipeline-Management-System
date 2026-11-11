@@ -1,0 +1,14 @@
+{
+  "tables": 22,
+  "columns": 162,
+  "sql_foreign_keys": 22,
+  "logical_relations": 2,
+  "width": 3440,
+  "height": 2600,
+  "pngWidth": 6880,
+  "pngHeight": 5200,
+  "pdfPages": 1,
+  "clippedText": [],
+  "highlight": "passed",
+  "zoom": "passed"
+}

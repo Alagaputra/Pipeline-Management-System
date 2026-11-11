@@ -1,0 +1,8 @@
+flowchart LR
+    browser["PIC dan Head melalui Vue"] -->|"Permintaan HTTPS / JSON"| api["Laravel REST API"]
+    api --> auth["Sesi dan aturan akses"]
+    auth --> service["Pipeline, target, laporan"]
+    service --> database[("MySQL")]
+    service --> audit["Audit dalam transaksi yang sama"]
+    audit --> database
+    api -->|"Data atau error"| browser

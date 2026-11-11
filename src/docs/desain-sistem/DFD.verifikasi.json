@@ -1,0 +1,72 @@
+{
+  "diagrams": [
+    {
+      "name": "dfd-konteks",
+      "pngWidth": 5040,
+      "pngHeight": 3570,
+      "clipped": [],
+      "overlaps": [],
+      "labelOverlaps": [],
+      "processCount": 1,
+      "entityIds": [
+        "E1",
+        "E2"
+      ],
+      "flowCount": 4,
+      "detached": []
+    },
+    {
+      "name": "dfd-level-1",
+      "pngWidth": 5040,
+      "pngHeight": 3570,
+      "clipped": [],
+      "overlaps": [],
+      "labelOverlaps": [],
+      "processCount": 5,
+      "entityIds": [
+        "E1",
+        "E2"
+      ],
+      "flowCount": 38,
+      "detached": []
+    },
+    {
+      "name": "dfd-level-2-pipeline",
+      "pngWidth": 5040,
+      "pngHeight": 3570,
+      "clipped": [],
+      "overlaps": [],
+      "labelOverlaps": [],
+      "processCount": 5,
+      "entityIds": [
+        "E1",
+        "E2"
+      ],
+      "flowCount": 43,
+      "detached": []
+    },
+    {
+      "name": "dfd-level-3-closing",
+      "pngWidth": 5040,
+      "pngHeight": 3570,
+      "clipped": [],
+      "overlaps": [],
+      "labelOverlaps": [],
+      "processCount": 5,
+      "entityIds": [
+        "E1",
+        "E2"
+      ],
+      "flowCount": 17,
+      "detached": []
+    }
+  ],
+  "pageErrors": [],
+  "offline": true,
+  "printOverflow": [],
+  "pdfPages": 4,
+  "localLinksChecked": 19,
+  "zoom": "passed",
+  "level3Zoom": "passed",
+  "mobileWidth": "passed"
+}

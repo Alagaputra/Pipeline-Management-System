@@ -1,0 +1,7 @@
+node_modules
+dist
+test-results
+package-lock.json
+Figma
+Icon
+.ui-review

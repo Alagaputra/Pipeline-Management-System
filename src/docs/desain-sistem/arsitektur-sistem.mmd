@@ -1,0 +1,30 @@
+flowchart LR
+    people["PIC dan Head Funding"] --> pages
+    subgraph frontend["Browser — Vue.js SPA"]
+        pages["Vue Router: Dashboard, Pipeline, Target, Riwayat, Tim, Login"]
+        state["useSession dan usePipeline"]
+        charts["Chart.js: visualisasi laporan"]
+        client["services/api.js: fetch, token, timeout, retry key"]
+        token["localStorage / sessionStorage: token autentikasi"]
+        pages --> state
+        state --> client
+        state --> charts
+        token --> client
+    end
+    client -->|"HTTP JSON + Bearer + Idempotency-Key untuk simpan"| auth
+    subgraph backend["Server — Laravel REST API"]
+        auth["Sanctum: autentikasi"]
+        retry["IdempotentWrite: transaksi dan replay hasil sukses"]
+        controller["Controller: validasi, izin divisi, aturan bisnis"]
+        reports["DashboardReport: agregasi target dan realisasi"]
+        models["Eloquent Models"]
+        audit["WritesAudit"]
+        auth --> retry --> controller
+        controller --> reports --> models
+        controller --> models
+        controller --> audit
+    end
+    models <-->|"Query, row lock, FK, UNIQUE"| pg[("PostgreSQL")]
+    audit -->|"Audit dalam transaksi yang sama"| pg
+    retry -->|"request_receipts"| pg
+    controller -->|"JSON: data atau pesan validasi/konflik"| client

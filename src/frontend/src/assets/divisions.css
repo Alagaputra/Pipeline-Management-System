@@ -1,0 +1,145 @@
+.division-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  border: 1px solid #e4dbf5;
+  border-radius: 12px;
+  background: #f4f0fd;
+}
+.division-toolbar strong {
+  color: var(--purple);
+  font-size: 15px;
+}
+.division-toolbar small {
+  display: block;
+  font-size: 11px;
+  margin-top: 5px;
+  color: #756585;
+}
+.division-toolbar label,
+.unit-target-panel .panel-heading label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+.demo-account-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+.demo-account-list button {
+  font-size: 11px;
+}
+.unit-target-panel {
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+.unit-manage-link {
+  margin: 0 24px 20px;
+  display: inline-flex;
+}
+.unit-target-panel .panel-heading {
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.unit-target-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0 24px 20px;
+}
+.unit-target-card {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.unit-target-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.unit-target-title h3 {
+  font-size: 17px;
+}
+.unit-target-card p,
+.unit-target-card small {
+  font-size: 11px;
+  color: #756585;
+  line-height: 1.8;
+}
+.unit-total {
+  display: block;
+  font-size: 26px;
+  margin: 8px 0 20px;
+  overflow-wrap: anywhere;
+}
+.unit-achievement {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  margin-bottom: 10px;
+}
+.unit-target-card .mini-track {
+  margin-bottom: 10px;
+}
+.unit-month-values {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.unit-month-values dt {
+  font-size: 10px;
+  color: #756585;
+}
+.unit-month-values dd {
+  margin: 6px 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.unit-target-card .button {
+  width: 100%;
+  margin-top: 16px;
+}
+.unit-footnote {
+  padding: 0 24px 24px;
+  font-size: 11px;
+  color: #756585;
+  line-height: 1.8;
+}
+.unit-annual-input {
+  display: block;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+.unit-annual-input input {
+  margin-top: 8px;
+}
+@media (max-width: 1100px) {
+  .unit-target-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .division-toolbar {
+    flex-wrap: wrap;
+  }
+  .division-toolbar label {
+    width: 100%;
+  }
+  .unit-target-grid {
+    padding: 0 16px 16px;
+  }
+}

@@ -1,0 +1,16 @@
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import '@fontsource/dm-sans/latin-400.css'
+import '@fontsource/dm-sans/latin-500.css'
+import '@fontsource/dm-sans/latin-600.css'
+import '@fontsource/dm-sans/latin-700.css'
+import '@fontsource/manrope/latin-700.css'
+import '@fontsource/manrope/latin-800.css'
+import './assets/main.css'
+import './assets/workspace.css'
+import './assets/analytics.css'
+import './assets/divisions.css'
+import './assets/ux.css'
+const app = createApp(App).use(router)
+router.isReady().then(() => app.mount('#app'))

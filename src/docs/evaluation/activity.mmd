@@ -1,0 +1,18 @@
+flowchart TD
+    login["Login akun pribadi"] --> dashboard["Dashboard sesuai divisi"]
+    dashboard --> active["Buka Pipeline"]
+    active --> form["Catat atau edit opportunity dalam drawer"]
+    form --> valid{"Data valid?"}
+    valid -->|"Tidak"| correction["Tampilkan error; pertahankan input"]
+    correction --> form
+    valid -->|"Ya"| saved["Simpan opportunity Active"]
+    saved --> action{"Tindakan PIC"}
+    action -->|"Follow-up"| followup["Catat atau tandai follow-up selesai"]
+    followup --> active
+    action -->|"Closing Won"| won["Isi realisasi dan tanggal closing"]
+    action -->|"Closing Lost"| lost["Isi alasan dan tanggal closing"]
+    won --> closingValid{"Closing valid?"}
+    lost --> closingValid
+    closingValid -->|"Tidak"| action
+    closingValid -->|"Ya"| history["Tetap tersimpan; muncul di History"]
+    history --> report["Rekap Dashboard, Target, Team diperbarui"]

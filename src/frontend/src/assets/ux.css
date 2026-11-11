@@ -1,0 +1,471 @@
+/* UX refinements; original source is preserved in backups/. */
+:root {
+  --muted: #6d687e;
+}
+.workspace {
+  min-width: 0;
+}
+.workspace .page-heading {
+  margin-bottom: 24px;
+}
+.workspace .page-heading p,
+.workspace .panel-heading p {
+  color: #686377;
+  font-size: 13px;
+  max-width: none;
+}
+.workspace .panel-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.workspace .panel-heading > .text-button {
+  flex-shrink: 0;
+}
+.workspace .eyebrow {
+  color: #716981;
+  font-size: 11px;
+}
+.workspace .division-toolbar {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin-bottom: 18px;
+  min-height: 0;
+}
+.workspace .division-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.workspace .division-toolbar strong {
+  display: inline-flex;
+  background: #efeafa;
+  color: #7151af;
+  padding: 5px 10px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+.workspace .division-toolbar small {
+  display: none;
+}
+.workspace .topbar {
+  height: 64px;
+}
+.sidebar-tip {
+  display: none;
+}
+.sidebar-bottom {
+  padding-top: 20px;
+}
+.workspace .panel-heading {
+  padding-top: 22px;
+  padding-bottom: 20px;
+}
+.workspace .monitor-cards article {
+  padding: 20px;
+}
+.workspace .monitor-cards article > span:not(.metric-icon) {
+  font-size: 13px;
+  color: #686377;
+}
+.workspace .monitor-cards small {
+  font-size: 12px;
+  color: #716b80;
+  line-height: 1.5;
+}
+.workspace .count-badge,
+.workspace .status-badge {
+  font-size: 12px;
+}
+.workspace .dashboard-footnote {
+  color: #716b80;
+  font-size: 12px;
+}
+.workspace .text-button {
+  font-size: 13px;
+}
+.workspace .year-filter {
+  color: #686377;
+  font-size: 12px;
+  gap: 9px;
+}
+.workspace .year-filter select {
+  width: 100px;
+}
+.opportunity-toolbar .search-input {
+  flex: 1;
+  min-width: 0;
+}
+.opportunity-toolbar .filters-toggle {
+  flex: 0 0 auto;
+  min-height: 43px;
+}
+.quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 26px 20px;
+}
+.quick-filters button {
+  padding: 8px 12px;
+  border: 1px solid #e6e1ef;
+  border-radius: 8px;
+  color: #696077;
+  font-size: 12px;
+  min-height: 36px;
+}
+.quick-filters button.selected {
+  background: #f0ebff;
+  color: var(--purple);
+  border-color: #d9cff7;
+  font-weight: 600;
+}
+.advanced-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 26px 20px;
+  padding: 18px;
+  background: #f8f6fc;
+  border: 1px solid #ebe5f2;
+  border-radius: 12px;
+}
+.advanced-filters label {
+  display: grid;
+  gap: 7px;
+  color: #625970;
+  font-size: 12px;
+  min-width: 0;
+}
+.advanced-filters select,
+.advanced-filters input {
+  font-size: 13px;
+  padding: 10px;
+}
+.active-filter-summary {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 26px 18px;
+  color: #696077;
+  font-size: 12px;
+}
+.opportunity-desktop th {
+  font-size: 12px;
+  color: #696377;
+}
+.opportunity-desktop td {
+  font-size: 14px;
+}
+.opportunity-desktop .date-cell {
+  font-size: 13px;
+  color: #625b72;
+}
+.opportunity-desktop .cell-subtitle {
+  font-size: 12px;
+  color: #716b80;
+}
+.opportunity-desktop .cell-note {
+  font-size: 13px;
+  color: #625b72;
+}
+.workspace .table-footer {
+  font-size: 12px;
+  color: #716b80;
+}
+.workspace .table-toolbar input::placeholder {
+  color: #7b7489;
+}
+.opportunity-mobile {
+  display: none;
+}
+.mobile-opportunity {
+  margin: 0 18px 12px;
+  padding: 16px;
+  border: 1px solid #e9e4f1;
+  border-radius: 13px;
+  background: #fff;
+}
+.mobile-opportunity-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mobile-opportunity-heading > div {
+  min-width: 0;
+}
+.mobile-opportunity .customer-link {
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.mobile-opportunity-heading p {
+  color: #716b80;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.mobile-opportunity-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 15px 0;
+}
+.mobile-opportunity-values dt {
+  color: #716b80;
+  font-size: 12px;
+}
+.mobile-opportunity-values dd {
+  margin: 5px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.mobile-opportunity-footer {
+  border-top: 1px solid #eeeaf4;
+  padding-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.mobile-opportunity-footer p {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #716b80;
+}
+.mobile-opportunity-footer p.overdue {
+  color: #b33e54;
+}
+.mobile-opportunity-footer p.today {
+  color: #916323;
+}
+.mobile-opportunity-footer button {
+  flex-shrink: 0;
+  min-height: 36px;
+}
+.work-queue {
+  margin-bottom: 24px;
+}
+.queue-empty {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 26px 22px;
+}
+.queue-empty > div {
+  flex: 1;
+}
+.queue-empty strong {
+  font-size: 14px;
+}
+.queue-empty p {
+  font-size: 12px;
+  color: #716b80;
+  margin-top: 3px;
+}
+.queue-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 20px;
+  padding: 17px 26px;
+  border-top: 1px solid #eeeaf4;
+}
+.queue-customer strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.queue-row > .status-badge {
+  justify-self: start;
+}
+.queue-customer p {
+  font-size: 12px;
+  color: #716b80;
+  margin-top: 4px;
+}
+.queue-due {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+.queue-due span {
+  color: #716b80;
+}
+.queue-due.overdue strong {
+  color: #b33e54;
+}
+.queue-due.today strong {
+  color: #916323;
+}
+.queue-row .button {
+  font-size: 12px;
+  padding: 10px 12px;
+}
+.drawer-body .form-grid label {
+  color: #4c445d;
+  font-size: 13px;
+}
+.drawer-body .form-grid small,
+.drawer-body .section-heading p {
+  color: #716b80;
+  font-size: 12px;
+}
+.drawer-context {
+  padding: 16px;
+  background: #f7f4fc;
+  border: 1px solid #ebe4f3;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+.drawer-context h3 {
+  font-size: 16px;
+}
+.drawer-context p {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #716b80;
+}
+.drawer-body .section-heading {
+  margin-bottom: 20px;
+}
+@media (max-width: 1000px) {
+  .advanced-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .queue-row {
+    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .queue-due {
+    grid-column: 1;
+  }
+}
+@media (max-width: 760px) {
+  .opportunity-desktop {
+    display: none;
+  }
+  .opportunity-mobile {
+    display: block;
+  }
+  .workspace .topbar {
+    height: 56px;
+  }
+  .workspace .division-toolbar {
+    margin-bottom: 14px;
+  }
+  .workspace .page-heading {
+    margin-bottom: 20px;
+  }
+  .workspace .panel-heading {
+    padding: 18px;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .workspace .panel-heading h2 {
+    font-size: 16px;
+  }
+  .workspace .monitor-cards article {
+    padding: 16px;
+  }
+  .workspace .monitor-cards article > span:not(.metric-icon) {
+    font-size: 12px;
+  }
+  .workspace .monitor-cards small {
+    font-size: 11px;
+  }
+  .workspace .table-toolbar {
+    padding: 16px 18px;
+    gap: 10px;
+    flex-wrap: nowrap;
+  }
+  .quick-filters {
+    padding: 0 18px 16px;
+    gap: 6px;
+  }
+  .quick-filters button {
+    padding: 8px 10px;
+  }
+  .advanced-filters {
+    margin: 0 18px 16px;
+    padding: 14px;
+    gap: 12px;
+  }
+  .active-filter-summary {
+    padding: 0 18px 16px;
+  }
+  .queue-empty {
+    padding: 0 18px 18px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .queue-empty > div {
+    flex-basis: calc(100% - 50px);
+  }
+  .queue-empty > a {
+    margin-left: 47px;
+  }
+  .queue-row {
+    padding: 16px 18px;
+  }
+  .queue-customer {
+    min-width: 0;
+  }
+  .queue-row .button {
+    justify-content: center;
+  }
+  .workspace .year-filter {
+    flex-wrap: wrap;
+  }
+  .workspace .year-filter select {
+    width: 90px;
+  }
+}
+
+/* Form feedback remains visible beside the affected field. */
+.form-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.drawer-body .form-grid .field-error {
+  color: #b4233b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.form-grid [aria-invalid='true'] {
+  border-color: #b4233b;
+}
+.closing-review h3 {
+  margin-top: 0;
+}
+.closing-review dd {
+  overflow-wrap: anywhere;
+}
+button:disabled {
+  cursor: default;
+}
+@media (max-width: 420px) {
+  .drawer-body .form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .drawer-body .form-actions .button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .sidebar-backdrop {
+    left: 230px;
+  }
+}
+.notice > .text-button {
+  margin-left: 10px;
+}

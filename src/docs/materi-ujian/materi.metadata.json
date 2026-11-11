@@ -1,0 +1,538 @@
+{
+  "date": "2026-10-20",
+  "pages": 88,
+  "widePages": 8,
+  "sources": 28,
+  "tableCount": 22,
+  "columnCount": 162,
+  "pageIndex": [
+    {
+      "page": 1,
+      "title": "Pipeline Funding Management",
+      "section": "BUKU BELAJAR PRIBADI",
+      "kind": "cover"
+    },
+    {
+      "page": 2,
+      "title": "Daftar isi · 1/2",
+      "section": "PETA MATERI",
+      "kind": ""
+    },
+    {
+      "page": 3,
+      "title": "Daftar isi · 2/2",
+      "section": "PETA MATERI",
+      "kind": ""
+    },
+    {
+      "page": 4,
+      "title": "Memahami proyek sampai bisa menjelaskannya",
+      "section": "PANDUAN BELAJAR",
+      "kind": ""
+    },
+    {
+      "page": 5,
+      "title": "Apakah sudah profesional?",
+      "section": "01 · HASIL PENINJAUAN",
+      "kind": ""
+    },
+    {
+      "page": 6,
+      "title": "Masalah yang ingin diselesaikan",
+      "section": "02 · KONTEKS BISNIS",
+      "kind": ""
+    },
+    {
+      "page": 7,
+      "title": "Tujuan, ruang lingkup, dan batas sistem",
+      "section": "02 · KONTEKS BISNIS",
+      "kind": ""
+    },
+    {
+      "page": 8,
+      "title": "Hak akses dan penanggung jawab",
+      "section": "03 · PENGGUNA DAN PRODUK",
+      "kind": ""
+    },
+    {
+      "page": 9,
+      "title": "Membedakan dana dan layanan",
+      "section": "03 · PENGGUNA DAN PRODUK",
+      "kind": ""
+    },
+    {
+      "page": 10,
+      "title": "Dua jenis status yang harus dibedakan",
+      "section": "04 · ALUR PELUANG",
+      "kind": ""
+    },
+    {
+      "page": 11,
+      "title": "Pencatatan dan perubahan peluang",
+      "section": "04 · ALUR PELUANG",
+      "kind": ""
+    },
+    {
+      "page": 12,
+      "title": "Closing Won/Lost secara rinci",
+      "section": "04 · ALUR PELUANG",
+      "kind": ""
+    },
+    {
+      "page": 13,
+      "title": "Lima halaman utama aplikasi",
+      "section": "05 · FITUR DAN NAVIGASI",
+      "kind": ""
+    },
+    {
+      "page": 14,
+      "title": "Membaca Dashboard tanpa salah tafsir",
+      "section": "05 · FITUR DAN NAVIGASI",
+      "kind": ""
+    },
+    {
+      "page": 15,
+      "title": "Contoh data untuk latihan",
+      "section": "06 · PERHITUNGAN",
+      "kind": ""
+    },
+    {
+      "page": 16,
+      "title": "Mencapai dan melampaui target",
+      "section": "06 · PERHITUNGAN",
+      "kind": ""
+    },
+    {
+      "page": 17,
+      "title": "Tahun, tren, dan realisasi layanan",
+      "section": "06 · PERHITUNGAN",
+      "kind": ""
+    },
+    {
+      "page": 18,
+      "title": "Riwayat hasil, audit, dan penugasan",
+      "section": "07 · RIWAYAT DAN TIM",
+      "kind": ""
+    },
+    {
+      "page": 19,
+      "title": "Tiga lapisan dan satu backend Laravel",
+      "section": "08 · ARSITEKTUR",
+      "kind": ""
+    },
+    {
+      "page": 20,
+      "title": "HTTP, JSON, dan kontrak API",
+      "section": "08 · ARSITEKTUR",
+      "kind": ""
+    },
+    {
+      "page": 21,
+      "title": "DFD, ERD, dan arsitektur mempunyai fokus berbeda",
+      "section": "09 · MEMBACA DIAGRAM",
+      "kind": ""
+    },
+    {
+      "page": 22,
+      "title": "Teknologi yang benar-benar dipakai",
+      "section": "10 · TECH STACK",
+      "kind": ""
+    },
+    {
+      "page": 23,
+      "title": "Alasan pemilihan dan konsekuensinya",
+      "section": "10 · TECH STACK",
+      "kind": ""
+    },
+    {
+      "page": 24,
+      "title": "Vue: komponen dan reaktivitas",
+      "section": "11 · FRONTEND",
+      "kind": ""
+    },
+    {
+      "page": 25,
+      "title": "Computed, composable, dan state bersama",
+      "section": "11 · FRONTEND",
+      "kind": ""
+    },
+    {
+      "page": 26,
+      "title": "Vue Router dan pengalaman navigasi",
+      "section": "11 · FRONTEND",
+      "kind": ""
+    },
+    {
+      "page": 27,
+      "title": "Vite, Node.js, npm, dan hasil build",
+      "section": "11 · FRONTEND",
+      "kind": ""
+    },
+    {
+      "page": 28,
+      "title": "Chart.js, CSS, dan aksesibilitas",
+      "section": "11 · FRONTEND",
+      "kind": ""
+    },
+    {
+      "page": 29,
+      "title": "PHP dan lifecycle Laravel",
+      "section": "12 · BACKEND",
+      "kind": ""
+    },
+    {
+      "page": 30,
+      "title": "Peta endpoint dan operasi bisnis",
+      "section": "12 · BACKEND",
+      "kind": ""
+    },
+    {
+      "page": 31,
+      "title": "Eloquent ORM dan relasi",
+      "section": "12 · BACKEND",
+      "kind": ""
+    },
+    {
+      "page": 32,
+      "title": "Validasi UI, API, dan database",
+      "section": "12 · BACKEND",
+      "kind": ""
+    },
+    {
+      "page": 33,
+      "title": "Membaca 22 tabel tanpa menghafal semuanya",
+      "section": "13 · DATABASE",
+      "kind": ""
+    },
+    {
+      "page": 34,
+      "title": "Primary key, foreign key, UNIQUE, dan normalisasi",
+      "section": "13 · DATABASE",
+      "kind": ""
+    },
+    {
+      "page": 35,
+      "title": "Tabel peluang dan riwayat penugasan",
+      "section": "13 · DATABASE",
+      "kind": ""
+    },
+    {
+      "page": 36,
+      "title": "Model target tahunan, bulanan, dan shared",
+      "section": "13 · DATABASE",
+      "kind": ""
+    },
+    {
+      "page": 37,
+      "title": "Audit, receipt, dan hubungan logis",
+      "section": "13 · DATABASE",
+      "kind": ""
+    },
+    {
+      "page": 38,
+      "title": "Rupiah, BIGINT, dan presisi angka",
+      "section": "13 · DATABASE",
+      "kind": ""
+    },
+    {
+      "page": 39,
+      "title": "Transaksi dan atomicity",
+      "section": "14 · INTEGRITAS",
+      "kind": ""
+    },
+    {
+      "page": 40,
+      "title": "Version, row lock, dan MVCC",
+      "section": "14 · INTEGRITAS",
+      "kind": ""
+    },
+    {
+      "page": 41,
+      "title": "Idempotency key dan retry yang aman",
+      "section": "14 · INTEGRITAS",
+      "kind": ""
+    },
+    {
+      "page": 42,
+      "title": "Login, token Sanctum, dan password",
+      "section": "15 · KEAMANAN",
+      "kind": ""
+    },
+    {
+      "page": 43,
+      "title": "Apa yang sudah dilindungi dan apa yang belum",
+      "section": "15 · KEAMANAN",
+      "kind": ""
+    },
+    {
+      "page": 44,
+      "title": "Indeks, query, dan fakta kecil database",
+      "section": "16 · POSTGRESQL",
+      "kind": ""
+    },
+    {
+      "page": 45,
+      "title": "Tanggal bisnis dan zona waktu",
+      "section": "16 · POSTGRESQL",
+      "kind": ""
+    },
+    {
+      "page": 46,
+      "title": "Composer, migration, dan seeder",
+      "section": "17 · DEVELOPMENT",
+      "kind": ""
+    },
+    {
+      "page": 47,
+      "title": "Apa yang telah diuji?",
+      "section": "18 · PENGUJIAN",
+      "kind": ""
+    },
+    {
+      "page": 48,
+      "title": "Menguji kegagalan, bukan hanya jalur berhasil",
+      "section": "18 · PENGUJIAN",
+      "kind": ""
+    },
+    {
+      "page": 49,
+      "title": "Telusuri satu penyimpanan dari layar sampai tabel",
+      "section": "19 · MENELUSURI KODE",
+      "kind": ""
+    },
+    {
+      "page": 50,
+      "title": "Menjalankan, membangun, dan menyiapkan demo",
+      "section": "20 · MENJALANKAN PROYEK",
+      "kind": ""
+    },
+    {
+      "page": 51,
+      "title": "Deployment dan pekerjaan berikutnya",
+      "section": "20 · MENJALANKAN PROYEK",
+      "kind": ""
+    },
+    {
+      "page": 52,
+      "title": "Susun cerita proyek dalam 90 detik",
+      "section": "21 · LATIHAN PENJELASAN",
+      "kind": ""
+    },
+    {
+      "page": 53,
+      "title": "Pertanyaan tentang bisnis dan fitur",
+      "section": "22 · TANYA JAWAB",
+      "kind": ""
+    },
+    {
+      "page": 54,
+      "title": "Pertanyaan tentang frontend dan API",
+      "section": "22 · TANYA JAWAB",
+      "kind": ""
+    },
+    {
+      "page": 55,
+      "title": "Pertanyaan tentang database dan laporan",
+      "section": "22 · TANYA JAWAB",
+      "kind": ""
+    },
+    {
+      "page": 56,
+      "title": "Pertanyaan tentang integritas dan keamanan",
+      "section": "22 · TANYA JAWAB",
+      "kind": ""
+    },
+    {
+      "page": 57,
+      "title": "Pertanyaan tentang pengujian dan evaluasi",
+      "section": "22 · TANYA JAWAB",
+      "kind": ""
+    },
+    {
+      "page": 58,
+      "title": "Enam kasus untuk menguji pemahaman",
+      "section": "23 · LATIHAN AKTIF",
+      "kind": ""
+    },
+    {
+      "page": 59,
+      "title": "Fakta kecil yang berguna saat menjelaskan",
+      "section": "24 · FAKTA KECIL",
+      "kind": ""
+    },
+    {
+      "page": 60,
+      "title": "Istilah penting · 1/2",
+      "section": "25 · GLOSARIUM",
+      "kind": ""
+    },
+    {
+      "page": 61,
+      "title": "Istilah penting · 2/2",
+      "section": "25 · GLOSARIUM",
+      "kind": ""
+    },
+    {
+      "page": 62,
+      "title": "Satu halaman sebelum latihan presentasi",
+      "section": "26 · RINGKASAN BELAJAR",
+      "kind": ""
+    },
+    {
+      "page": 63,
+      "title": "Peta berkas untuk membuka bukti",
+      "section": "SUMBER DAN BUKTI",
+      "kind": ""
+    },
+    {
+      "page": 64,
+      "title": "Kamus kolom · 1/11",
+      "section": "LAMPIRAN · KAMUS DATA",
+      "kind": "dictionary"
+    },
+    {
+      "page": 65,
+      "title": "Kamus kolom · 2/11",
+      "section": "LAMPIRAN · KAMUS DATA",
+      "kind": "dictionary"
+    },
+    {
+      "page": 66,
+      "title": "Kamus kolom · 3/11",
+      "section": "LAMPIRAN · KAMUS DATA",
+      "kind": "dictionary"
+    },
+    {
+      "page": 67,
+      "title": "Kamus kolom · 4/11",
+      "section": "LAMPIRAN · KAMUS DATA",
+      "kind": "dictionary"
+    },
+    {
+      "page": 68,
+      "title": "Kamus kolom · 5/11",
+      "section": "LAMPIRAN · KAMUS DATA",
+      "kind": "dictionary"
+    },
+    {
+      "page": 69,
+      "title": "Kamus kolom · 6/11",
+      "section": "LAMPIRAN · KAMUS DATA",
+      "kind": "dictionary"
+    },
+    {
+      "page": 70,
+      "title": "Kamus kolom · 7/11",
+      "section": "LAMPIRAN · KAMUS DATA",
+      "kind": "dictionary"
+    },
+    {
+      "page": 71,
+      "title": "Kamus kolom · 8/11",
+      "section": "LAMPIRAN · KAMUS DATA",
+      "kind": "dictionary"
+    },
+    {
+      "page": 72,
+      "title": "Kamus kolom · 9/11",
+      "section": "LAMPIRAN · KAMUS DATA",
+      "kind": "dictionary"
+    },
+    {
+      "page": 73,
+      "title": "Kamus kolom · 10/11",
+      "section": "LAMPIRAN · KAMUS DATA",
+      "kind": "dictionary"
+    },
+    {
+      "page": 74,
+      "title": "Kamus kolom · 11/11",
+      "section": "LAMPIRAN · KAMUS DATA",
+      "kind": "dictionary"
+    },
+    {
+      "page": 75,
+      "title": "Rujukan resmi teknologi",
+      "section": "SUMBER DAN BUKTI",
+      "kind": "references"
+    },
+    {
+      "page": 76,
+      "title": "Rujukan resmi teknologi",
+      "section": "SUMBER DAN BUKTI",
+      "kind": "references"
+    },
+    {
+      "page": 77,
+      "title": "Rujukan resmi teknologi",
+      "section": "SUMBER DAN BUKTI",
+      "kind": "references"
+    },
+    {
+      "page": 78,
+      "title": "Pipeline aktif",
+      "section": "LAMPIRAN · TAMPILAN UI",
+      "kind": "ui"
+    },
+    {
+      "page": 79,
+      "title": "Target tahunan",
+      "section": "LAMPIRAN · TAMPILAN UI",
+      "kind": "ui"
+    },
+    {
+      "page": 80,
+      "title": "Tim dan PIC",
+      "section": "LAMPIRAN · TAMPILAN UI",
+      "kind": "ui"
+    },
+    {
+      "page": 81,
+      "title": "Arsitektur sistem",
+      "section": "LAMPIRAN · DIAGRAM A3",
+      "kind": "wide"
+    },
+    {
+      "page": 82,
+      "title": "ERD master dan pipeline",
+      "section": "LAMPIRAN · DIAGRAM A3",
+      "kind": "wide"
+    },
+    {
+      "page": 83,
+      "title": "ERD target dan realisasi",
+      "section": "LAMPIRAN · DIAGRAM A3",
+      "kind": "wide"
+    },
+    {
+      "page": 84,
+      "title": "ERD autentikasi, audit, dan retry",
+      "section": "LAMPIRAN · DIAGRAM A3",
+      "kind": "wide"
+    },
+    {
+      "page": 85,
+      "title": "DFD konteks",
+      "section": "LAMPIRAN · DIAGRAM A3",
+      "kind": "wide"
+    },
+    {
+      "page": 86,
+      "title": "DFD Level 1",
+      "section": "LAMPIRAN · DIAGRAM A3",
+      "kind": "wide"
+    },
+    {
+      "page": 87,
+      "title": "DFD Level 2 pipeline",
+      "section": "LAMPIRAN · DIAGRAM A3",
+      "kind": "wide"
+    },
+    {
+      "page": 88,
+      "title": "DFD Level 3 closing",
+      "section": "LAMPIRAN · DIAGRAM A3",
+      "kind": "wide"
+    }
+  ]
+}
