@@ -7,7 +7,6 @@ Frontend menggunakan Vue 3 dan Vite; backend menggunakan Laravel, Sanctum, dan P
 
 - `src/frontend/`: aplikasi, aset ikon, konfigurasi, dan pengujian frontend.
 - `src/backend/`: REST API, migration, seeder, dan pengujian backend.
-- `src/docs/`: dokumentasi sistem, diagram, dan materi pendukung.
 - `Figma/`: referensi desain antarmuka.
 - `package.json` di root: pintasan perintah frontend.
 
@@ -58,6 +57,9 @@ Panduan tes browser beserta database pengujian terpisah ada di
 [panduan frontend](src/frontend/README.md).
 
 ## Berkas lokal
+
+`src/docs/` menyimpan dokumentasi sistem, diagram, dan materi pendukung secara
+lokal. Folder ini diabaikan Git dan tidak disertakan pada versi repo terbaru.
 
 `arsip-lokal/` mengumpulkan backup, log, hasil review, cache, serta salinan
 frontend lama yang dipindahkan saat perapian. Folder ini diabaikan Git.
