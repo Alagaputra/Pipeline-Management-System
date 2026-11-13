@@ -11,12 +11,14 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
+        // Validasi kredensial akun aktif, lalu berikan token Sanctum beserta profil/divisi.
         $data = $request->validate(['username' => ['required', 'string'], 'password' => ['required', 'string']]);
         $user = User::with('division')->where('username', strtolower($data['username']))->where('is_active', true)->first();
         if (!$user || !Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages(['username' => ['Username atau password tidak sesuai.']]);
         }
         $user->tokens()->delete();
+        // Login baru mencabut seluruh token lama milik akun ini.
         return response()->json(['token' => $user->createToken('vue-app')->plainTextToken, 'user' => $user]);
     }
 
@@ -24,6 +26,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        // Logout mencabut token yang dipakai permintaan ini.
         $request->user()->currentAccessToken()?->delete();
         return response()->noContent();
     }

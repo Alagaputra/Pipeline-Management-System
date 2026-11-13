@@ -7,6 +7,8 @@ export const confirmation = reactive({
   danger: false,
 })
 let resolveConfirmation, pending
+// Pemanggil menunggu Promise; ConfirmDialog meneruskannya melalui answerConfirmation.
+// Jika dialog masih terbuka, gunakan Promise yang sama agar konfirmasi tidak bertumpuk.
 export function confirmAction({
   title = 'Batalkan perubahan?',
   message = 'Perubahan yang belum disimpan akan hilang.',

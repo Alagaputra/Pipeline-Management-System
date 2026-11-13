@@ -10,8 +10,10 @@ import {
 } from '../services/api'
 
 const user = ref(null)
+// Satu state sesi digunakan oleh router, shell aplikasi, dan seluruh composable.
 const sessionNotice = ref('')
 setUnauthorizedHandler((message) => {
+  // API 401 menutup konfirmasi yang tertunda dan memicu router kembali ke login.
   answerConfirmation(false)
   clearToken()
   user.value = null
@@ -29,6 +31,8 @@ const normalizeUser = (value) => ({
 })
 
 async function initialize() {
+  // Pulihkan akun dari token saat aplikasi dibuka. Bagikan promise yang sama agar
+  // beberapa pemanggil tidak mengirim /me secara bersamaan.
   if (user.value || !getToken()) return user.value
   if (!initialization)
     initialization = api('/me')
@@ -49,6 +53,7 @@ export function useSession() {
       body: JSON.stringify({ username: name.trim().toLowerCase(), password }),
     })
     clearPendingWrites()
+    // Retry dari sesi sebelumnya tidak boleh terbawa ke akun yang baru masuk.
     sessionNotice.value = ''
     saveToken(response.token, remember)
     user.value = normalizeUser(response.user)
@@ -58,7 +63,7 @@ export function useSession() {
     try {
       if (getToken()) await api('/logout', { method: 'POST' })
     } catch {
-      // Local logout always finishes, even when the server cannot be reached.
+      // Keluar di perangkat tetap diselesaikan meskipun server tidak dapat dijangkau.
     } finally {
       clearToken()
       clearPendingWrites()

@@ -19,6 +19,7 @@ class OpportunityController extends Controller
 
     public function index(Request $request)
     {
+        // Muat relasi untuk frontend, batasi divisi, lalu terapkan filter/sort/paginasi.
         $query = Opportunity::with(['division:id,code,name', 'pic:id,name,username', 'product:id,code,name,measure', 'assignments.pic:id,name']);
         if (!$request->user()->isHead()) $query->where('division_id', $request->user()->division_id);
         elseif ($request->filled('division_id')) $query->where('division_id', $request->integer('division_id'));
@@ -36,6 +37,7 @@ class OpportunityController extends Controller
 
     public function show(Request $request, int $id)
     {
+        // Detail mencakup timeline audit; ID PIC/produk pada snapshot dilengkapi nama.
         $opportunity = $this->visibleOpportunity($request, $id)->load(['division', 'pic', 'product', 'assignments.pic']);
         $opportunity->setAttribute('timeline', AuditEvent::with('actor:id,name')->where('resource_type', 'opportunity')->where('resource_id', (string) $id)->orderBy('occurred_at')->orderBy('id')->get());
         $opportunity->timeline->each(function ($event) {
@@ -52,6 +54,8 @@ class OpportunityController extends Controller
 
     public function store(Request $request)
     {
+        // Peluang baru selalu Active. Peluang, penugasan PIC, dan audit dibuat
+        // dalam satu transaksi agar tidak ada catatan pendukung yang tertinggal.
         $divisionId = $this->divisionId($request);
         $data = $this->validated($request, $divisionId);
         return DB::transaction(function () use ($request, $divisionId, $data) {
@@ -64,6 +68,8 @@ class OpportunityController extends Controller
 
     public function update(Request $request, int $id)
     {
+        // Hanya peluang aktif yang dapat diedit. version dari frontend harus cocok
+        // dengan versi terkini agar perubahan pengguna lain tidak tertimpa.
         $opportunity = $this->visibleOpportunity($request, $id);
         abort_if($opportunity->outcome !== 'Active', 409, 'Opportunity sudah closing.');
         $request->validate(['version' => ['required', 'integer', 'min:1']]);
@@ -71,15 +77,18 @@ class OpportunityController extends Controller
         $divisionId = $this->divisionId($request, $opportunity->division_id);
         $data = $this->validated($request, $divisionId, $opportunity->segment === 'Small');
         if (($data['follow_up_date'] ?? null) !== $opportunity->follow_up_date?->format('Y-m-d')) {
+            // Jadwal yang berubah menjadi tugas follow-up baru yang belum selesai.
             $data['follow_up_completed'] = false;
         }
         return DB::transaction(function () use ($request, $opportunity, $data) {
+            // Periksa ulang setelah row terkunci: data bisa berubah sejak validasi awal.
             $opportunity = $this->visibleOpportunity($request, $opportunity->id, true);
             abort_if($opportunity->outcome !== 'Active' || (int) $request->version !== (int) $opportunity->version, 409, 'Data telah berubah. Muat ulang.');
             $before = $opportunity->toArray();
             $oldPic = $opportunity->pic_id;
             $opportunity->update([...$data, 'updated_by' => $request->user()->id, 'version' => $opportunity->version + 1]);
             if ($oldPic !== $opportunity->pic_id) {
+                // Tutup penugasan lama dan buat penugasan baru, tanpa menghapus riwayat PIC.
                 OpportunityAssignment::where('opportunity_id', $opportunity->id)->whereNull('unassigned_at')->update(['unassigned_at' => now()]);
                 OpportunityAssignment::create(['opportunity_id' => $opportunity->id, 'pic_id' => $opportunity->pic_id, 'assigned_at' => now(), 'changed_by' => $request->user()->id]);
             }
@@ -90,6 +99,7 @@ class OpportunityController extends Controller
 
     public function completeFollowUp(Request $request, int $id)
     {
+        // Penyelesaian tugas tidak menutup peluang; cukup ubah penanda dan naikkan version.
         return DB::transaction(function () use ($request, $id) {
             $opportunity = $this->visibleOpportunity($request, $id, true);
             $data = $request->validate(['version' => ['required', 'integer', 'min:1']]);
@@ -104,6 +114,8 @@ class OpportunityController extends Controller
 
     public function close(Request $request, int $id)
     {
+        // Closing bersifat final di API ini: Won wajib realisasi positif,
+        // Lost wajib alasan dan realisasi nol. Peluang selesai tampil di Riwayat.
         return DB::transaction(function () use ($request, $id) {
             $opportunity = $this->visibleOpportunity($request, $id, true);
             abort_if($opportunity->outcome !== 'Active', 409, 'Opportunity sudah closing.');
@@ -133,6 +145,8 @@ class OpportunityController extends Controller
 
     private function validated(Request $request, int $divisionId, bool $legacySmall = false): array
     {
+        // Selain format input, pastikan PIC aktif dan produk rupiah tersedia di divisi.
+        // Segmen Small hanya diizinkan untuk mempertahankan data lama yang sudah memakainya.
         $data = $request->validate([
             'pic_id' => ['required', 'integer'], 'product_id' => ['required', 'integer'],
             'customer_name' => ['required', 'string', 'max:160'], 'segment' => ['required', Rule::in($legacySmall ? ['Small', 'Mid', 'Large'] : ['Mid', 'Large'])],

@@ -36,6 +36,8 @@ const {
   storageError,
 } = usePipeline()
 const current = computed(() => rows.value.find((row) => row.id === props.id))
+// Drawer menyatukan detail, edit, follow-up, dan closing; form memakai salinan data
+// agar perubahan isian tidak langsung mengubah state bersama sebelum tersimpan.
 const editing = ref(!props.id || props.initialAction === 'followup')
 const closing = ref(false)
 const followupOnly = ref(props.initialAction === 'followup')
@@ -45,6 +47,8 @@ const saving = ref(false)
 const uncertain = ref(false)
 const conflict = ref(false)
 const requestKey = ref(crypto.randomUUID())
+// Penyimpanan form dan penyelesaian follow-up memakai key berbeda;
+// key yang sama dipertahankan saat retry untuk memastikan hasil tanpa duplikasi.
 const followupKey = ref(crypto.randomUUID())
 const reviewing = ref(false)
 const fieldErrors = ref({})
@@ -60,6 +64,7 @@ async function focusError() {
 }
 const form = reactive({ ...blank(), ...(current.value || {}) })
 let baseline = JSON.stringify(form)
+// Hasil simpan yang belum pasti juga dianggap dirty, meskipun isian belum berubah.
 const dirty = computed(
   () => editing.value && (uncertain.value || JSON.stringify(form) !== baseline),
 )
@@ -99,6 +104,7 @@ async function requestClose() {
     emit('close')
 }
 function edit(outcome, action = '') {
+  // Mulai sesi edit baru dari data terkini; closing menyiapkan tanggal dan hasil awal.
   if (saving.value) return
   reviewing.value = false
   uncertain.value = false
@@ -128,6 +134,7 @@ async function cancel() {
   }
 }
 async function submit() {
+  // Alur form: normalisasi angka -> validasi field -> review closing -> simpan API.
   if (saving.value) return
   const value = { ...form, nominal: Number(form.nominal), realization: Number(form.realization) }
   fieldErrors.value = pipelineFieldErrors(value, {
@@ -142,6 +149,7 @@ async function submit() {
     return
   }
   if (closing.value && !reviewing.value) {
+    // Submit pertama membuka review; submit berikutnya baru mengirim hasil closing.
     reviewing.value = true
     await nextTick()
     formElement.value?.querySelector('[data-review-heading]')?.focus()
@@ -156,6 +164,8 @@ async function submit() {
     error.value = e.message
     uncertain.value = Boolean(e.uncertain)
     conflict.value = e.status === 409
+    // uncertain berarti hasil belum pasti; conflict berarti perlu memuat versi terbaru.
+    // Petakan nama field backend agar pesan validasi tampil pada input frontend yang sesuai.
     const names = {
       customer_name: 'customer',
       recorded_date: 'date',
@@ -181,6 +191,7 @@ async function submit() {
   }
 }
 async function finishFollowup() {
+  // Aksi ini terpisah dari closing, sehingga peluang tetap bisa ditindaklanjuti lagi.
   if (saving.value) return
   saving.value = true
   error.value = ''
@@ -195,6 +206,7 @@ async function finishFollowup() {
   }
 }
 async function reloadConflict() {
+  // Setelah konfirmasi, ambil versi terbaru dan bangun ulang form beserta request key.
   if (
     !(await confirmAction({
       title: 'Muat data terbaru?',

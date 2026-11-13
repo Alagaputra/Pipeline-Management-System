@@ -7,9 +7,11 @@ import OpportunityDrawer from '../components/OpportunityDrawer.vue'
 import { usePipeline } from '../composables/usePipeline'
 const { activeRows, canEdit, loading } = usePipeline()
 const route = useRoute()
+// selected null menutup drawer, string kosong membuat peluang, ID membuka detail.
 const selected = ref(null),
   message = ref('')
 function saved(row) {
+  // usePipeline memperbarui state; peluang Won/Lost otomatis keluar dari activeRows.
   message.value =
     row.outcome === 'Active'
       ? 'Peluang berhasil disimpan.'

@@ -9,6 +9,8 @@ import {
 import { validateUnitEntry } from '../utils/divisions'
 import { api } from '../services/api'
 import { useSession } from './useSession'
+// Pusat alur data: sesi/divisi/tahun -> muat API -> state bersama -> tampilan.
+// State di tingkat modul membuat semua pemanggil usePipeline berbagi data yang sama.
 const rowsState = ref([]),
   masterDivisions = ref([]),
   masterProducts = ref([]),
@@ -24,9 +26,11 @@ const storageError = ref(''),
 const selectedYear = ref(new Date().getFullYear()),
   headDivision = ref('all')
 const { user } = useSession()
+// Nomor urut menolak respons lama yang selesai setelah permintaan baru dimulai.
 const sequences = { lookups: 0, rows: 0, targets: 0, dashboard: 0, refresh: 0 }
 let lookupKey = ''
 const isHead = computed(() => user.value?.role === 'head')
+// Head dapat memilih semua divisi; aksi edit memerlukan satu divisi dan data siap.
 const division = computed(() => (isHead.value ? headDivision.value : user.value?.division || ''))
 const canEdit = computed(() =>
   Boolean(user.value && !loading.value && DIVISIONS.includes(division.value)),
@@ -49,6 +53,7 @@ const activeRows = computed(() => rows.value.filter((row) => !isClosed(row)))
 const closedRows = computed(() => rows.value.filter(isClosed))
 const annualTargets = computed(() => annualState.value)
 function capture() {
+  // Bekukan konteks sebelum await agar hasil request tetap terkait akun/divisi/tahun asal.
   return {
     userId: user.value?.backendId,
     scope: division.value,
@@ -60,6 +65,7 @@ function capture() {
   }
 }
 function current(context, year = true) {
+  // Respons dari konteks lama tidak boleh menimpa tampilan setelah pengguna berganti filter.
   return Boolean(
     user.value &&
     context.userId === user.value.backendId &&
@@ -71,6 +77,7 @@ function queryScope(context) {
   return context.head && context.scope !== 'all' ? `&division_id=${context.divisionId}` : ''
 }
 const mapOpportunity = (item) => ({
+  // Normalisasi nama field API, angka, dan relasi menjadi bentuk yang dipakai komponen.
   id: String(item.id),
   version: item.version,
   division: item.division?.name || '',
@@ -97,6 +104,7 @@ const mapOpportunity = (item) => ({
 })
 
 async function loadLookups(context) {
+  // Master divisi/produk/PIC dimuat per akun dan cakupan, lalu dipakai form serta pemetaan ID.
   const key = `${context.userId}:${context.scope}`
   if (lookupKey === key) return
   const request = ++sequences.lookups
@@ -114,6 +122,7 @@ async function loadLookups(context) {
   lookupKey = key
 }
 async function loadOpportunities(context) {
+  // API membatasi 100 baris per halaman; kumpulkan seluruh halaman sebelum memperbarui state.
   const request = ++sequences.rows,
     records = []
   let page = 1,
@@ -128,6 +137,8 @@ async function loadOpportunities(context) {
   if (current(context) && request === sequences.rows) rowsState.value = records.map(mapOpportunity)
 }
 function applyTargets(targets, branches, context) {
+  // Pisahkan target rupiah dari target unit. Map menyimpan record beserta version
+  // untuk penyimpanan berikutnya; angka ringkasan disusun untuk kebutuhan tampilan.
   if (!current(context)) return
   const annual = { Tabungan: 0, Giro: 0, Deposito: 0, bekasi: 0, monthly: {} },
     units = {},
@@ -167,6 +178,7 @@ function applyTargets(targets, branches, context) {
 async function loadTargets(context) {
   const request = ++sequences.targets
   const targetsRequest =
+    // Saat head memilih satu divisi, target CMS pada scope shared tetap disertakan.
     context.head && context.scope !== 'all'
       ? Promise.all([
           api(`/targets?year=${context.year}&scope=${context.scope.toLowerCase()}`),
@@ -186,6 +198,7 @@ async function loadDashboard(context) {
     dashboard.value = { ...report, follow_ups: report.follow_ups.map(mapOpportunity) }
 }
 async function refresh() {
+  // Master harus tersedia lebih dulu agar ID divisi benar; data lainnya dimuat paralel.
   if (!user.value) return
   const context = capture(),
     request = ++sequences.refresh
@@ -203,6 +216,8 @@ async function refresh() {
   }
 }
 function reset(scopeChanged = true) {
+  // Naikkan semua nomor urut untuk mengabaikan respons yang masih berjalan.
+  // Jika hanya tahun berubah, master data tetap dapat dipakai.
   for (const key of Object.keys(sequences)) sequences[key]++
   rowsState.value = []
   dashboard.value = null
@@ -230,6 +245,7 @@ watch(
   { immediate: true },
 )
 watch([headDivision, selectedYear], ([scope], previous) => {
+  // Pergantian filter membersihkan data lama sebelum memuat konteks baru.
   reset(scope !== previous?.[0])
   if (user.value) refresh()
 })
@@ -237,6 +253,8 @@ function requireDivision() {
   if (!canEdit.value) throw new Error('Pilih divisi dan tunggu data selesai dimuat.')
 }
 async function afterWrite(context, target = false) {
+  // Penyimpanan sudah berhasil sebelum fungsi ini dipanggil. Jika pemuatan ringkasan
+  // gagal, tampilkan pemberitahuan tanpa menyatakan bahwa proses simpan gagal.
   if (!current(context)) return
   try {
     await Promise.all(
@@ -265,6 +283,8 @@ function rememberTargets(saved, context) {
   applyTargets([...map.values()], [...branchRecords.value.values()], context)
 }
 export function usePipeline() {
+  // Komponen memanggil aksi di bawah; validasi awal dilakukan di sini dan
+  // backend tetap memeriksa otorisasi, aturan bisnis, serta version data.
   async function save(row, { requestKey = crypto.randomUUID() } = {}) {
     requireDivision()
     const context = capture(),
@@ -279,6 +299,7 @@ export function usePipeline() {
     if (error) throw new Error(error)
     let saved
     if (row.outcome !== 'Active' && previous) {
+      // Closing punya endpoint khusus; Won mengirim realisasi, Lost mengirim alasan.
       saved = await api(`/opportunities/${previous.id}/closing`, {
         method: 'POST',
         requestKey,
@@ -305,6 +326,7 @@ export function usePipeline() {
         notes: row.notes?.trim() || null,
       }
       if (previous) payload.version = previous.version
+      // version mencegah isian lama menimpa perubahan pengguna lain (konflik HTTP 409).
       saved = await api(previous ? `/opportunities/${previous.id}` : '/opportunities', {
         method: previous ? 'PATCH' : 'POST',
         requestKey,
@@ -316,6 +338,7 @@ export function usePipeline() {
     return mapped
   }
   async function complete(id, { requestKey = crypto.randomUUID() } = {}) {
+    // Menyelesaikan follow-up hanya menandai tugas; status peluang tetap Active.
     requireDivision()
     const context = capture(),
       row = rows.value.find((item) => item.id === id)
@@ -329,6 +352,7 @@ export function usePipeline() {
     await afterWrite(context)
   }
   async function saveTargets(year, values, { requestKey = crypto.randomUUID() } = {}) {
+    // Kirim target produk dalam satu batch beserta version; 0 berarti record belum ada.
     requireDivision()
     const error = validatePipelineTargets(year, values)
     if (error) throw new Error(error)
@@ -355,6 +379,7 @@ export function usePipeline() {
       body: JSON.stringify({ year: context.year, scope, targets }),
     })
     selectedYear.value = context.year
+    // Tunggu watcher pergantian tahun mereset state sebelum memasang hasil simpan.
     await nextTick()
     rememberTargets(saved, context)
     await afterWrite(context, true)
@@ -363,6 +388,8 @@ export function usePipeline() {
     return unitState.value[product] || { target: 0, monthly: {} }
   }
   async function saveUnitTarget(product, year, entry, { requestKey = crypto.randomUUID() } = {}) {
+    // CMS memakai scope shared; layanan lainnya mengikuti divisi yang sedang dipilih.
+    // Target tahunan dan 12 realisasi bulanan dikirim sebagai satu batch.
     if (!user.value || loading.value || (product !== 'CMS' && !canEdit.value))
       throw new Error('Tunggu data selesai dimuat dan pilih divisi.')
     validateUnitEntry(entry)

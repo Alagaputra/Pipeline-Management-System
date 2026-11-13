@@ -36,6 +36,7 @@ const requestKey = ref(crypto.randomUUID())
 const error = ref('')
 const success = ref('')
 const draft = reactive({ year: selectedYear.value, Tabungan: 0, Giro: 0, Deposito: 0 })
+// Draft terpisah dari target tersimpan; baseline dipakai untuk mendeteksi perubahan.
 let baseline = ''
 useUnsavedChanges(
   computed(() => editing.value && (uncertain.value || JSON.stringify(draft) !== baseline)),
@@ -59,6 +60,7 @@ watch(
   () => [route.query.edit, canEdit.value, loading.value],
   async () => {
     if (route.query.edit !== '1' || !canEdit.value || loading.value) return
+    // Tautan dari kartu target menunggu tahun/data siap, lalu membuka dan memfokuskan form.
     const year = Number(route.query.year)
     if (Number.isInteger(year) && year >= 2000 && year <= 2100 && year !== selectedYear.value) {
       selectedYear.value = year
@@ -102,6 +104,8 @@ async function reloadConflict() {
   edit()
 }
 async function save() {
+  // Validasi isian, ubah angka, lalu simpan semua target produk lewat satu batch.
+  // requestKey tetap dipakai saat hasil belum pasti; konflik memerlukan muat ulang.
   if (saving.value) return
   fieldErrors.value = {}
   if (

@@ -18,6 +18,7 @@ class TargetController extends Controller
 
     public function index(Request $request)
     {
+        // Cakupan baca mengikuti role; target CMS shared ikut tersedia lintas divisi.
         $request->validate(['year' => ['required', 'integer', 'between:2000,2100'], 'scope' => ['nullable', 'string']]);
         $scopes = $this->readableScopes($request);
         if ($request->filled('scope')) {
@@ -30,6 +31,8 @@ class TargetController extends Controller
 
     public function batch(Request $request)
     {
+        // Satu batch menyimpan target beberapa produk beserta rincian bulanannya.
+        // Validasi seluruh isi lebih dulu; transaksi berikutnya berhasil/gagal sebagai satu unit.
         $data = $request->validate([
             'scope' => ['required', 'string'], 'year' => ['required', 'integer', 'between:2000,2100'],
             'targets' => ['required', 'array', 'min:1', 'max:10'],
@@ -55,17 +58,21 @@ class TargetController extends Controller
             return [$product, $entry];
         });
         return DB::transaction(function () use ($request, $data, $entries) {
+            // Kunci scope juga melindungi pembuatan record baru yang belum bisa dikunci.
             TargetScope::whereKey($data['scope'])->lockForUpdate()->firstOrFail();
             $saved = [];
             foreach ($entries as [$product, $entry]) {
                 $target = AnnualTarget::where(['scope_code' => $data['scope'], 'product_id' => $product->id, 'year' => $data['year']])->lockForUpdate()->first();
                 abort_if(($target ? (int) $target->version : 0) !== $entry['version'], 409, 'Target telah berubah. Muat data terbaru.');
+                // version 0 hanya cocok untuk target yang belum ada; update menaikkan versi.
                 $before = $target?->load(['monthlyTargets', 'unitRealizations'])->toArray();
                 $target ??= new AnnualTarget(['scope_code' => $data['scope'], 'product_id' => $product->id, 'year' => $data['year']]);
                 $target->fill(['target_value' => $entry['target_value'], 'updated_by' => $request->user()->id, 'version' => $target->exists ? $target->version + 1 : 1])->save();
                 foreach ($entry['monthly'] ?? [] as $month) {
                     $target->monthlyTargets()->updateOrCreate(['month' => $month['month']], ['target_value' => $month['target_value']]);
                     if ($product->measure !== 'UNIT') continue;
+                    // Produk rupiah hanya menyimpan target; realisasi unit punya record/version
+                    // tersendiri per bulan dan ikut diperiksa sebelum ditulis.
                     $actual = $target->unitRealizations()->where('month', $month['month'])->lockForUpdate()->first();
                     abort_if(($actual ? (int) $actual->version : 0) !== $month['version'], 409, 'Realisasi telah berubah. Muat data terbaru.');
                     if (!$actual || (int) $actual->units !== $month['units']) {
@@ -85,6 +92,7 @@ class TargetController extends Controller
 
     public function upsert(Request $request, string $scope, string $product, int $year)
     {
+        // Jalur penyimpanan satu target; scope, produk, dan tahun membentuk identitasnya.
         $productModel = Product::where('code', $product)->where('is_active', true)->firstOrFail();
         $this->authorizeWrite($request, $scope, $productModel);
         abort_unless($year >= 2000 && $year <= 2100, 422, 'Tahun tidak valid.');
@@ -110,6 +118,7 @@ class TargetController extends Controller
 
     public function realize(Request $request, string $scope, string $product, int $year, int $month)
     {
+        // Realisasi manual hanya untuk produk UNIT; realisasi rupiah berasal dari closing Won.
         $productModel = Product::where('code', $product)->where('measure', 'UNIT')->firstOrFail();
         $this->authorizeWrite($request, $scope, $productModel);
         abort_unless($year >= 2000 && $year <= 2100 && $month >= 1 && $month <= 12, 422, 'Tahun atau bulan tidak valid.');
@@ -139,6 +148,7 @@ class TargetController extends Controller
 
     public function upsertBranch(Request $request, string $division, string $branch, int $year)
     {
+        // Target cabang terpisah dari target produk dan mengikuti hak akses divisi.
         $divisionModel = Division::where('code', $division)->firstOrFail();
         abort_unless($request->user()->isHead() || $request->user()->division_id === $divisionModel->id, 403);
         abort_unless($year >= 2000 && $year <= 2100, 422, 'Tahun tidak valid.');
@@ -164,6 +174,7 @@ class TargetController extends Controller
 
     private function authorizeWrite(Request $request, string $scope, Product $product): void
     {
+        // CMS hanya boleh di shared; produk lain harus cocok dengan divisi pada scope.
         abort_unless(TargetScope::whereKey($scope)->exists(), 404);
         if ($scope === 'shared') {
             abort_unless($product->code === 'cms', 422, 'Scope shared hanya untuk CMS.');

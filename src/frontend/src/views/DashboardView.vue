@@ -12,12 +12,14 @@ import { usePipeline } from '../composables/usePipeline'
 import { useSession } from '../composables/useSession'
 import { compactMoney, percent, STATUSES } from '../utils/pipeline'
 const { dashboard, selectedYear } = usePipeline()
+// Angka laporan dihitung backend; halaman ini mengubah hasilnya menjadi kartu/grafik.
 const { user } = useSession()
 const summary = computed(() => dashboard.value?.summary || [])
 const comparisonOpen = ref(false)
 const selectedOpportunity = ref(null)
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 const targetChart = computed(() => ({
+  // Grafik rupiah memakai satuan miliar; nilai asli pada state tetap dalam rupiah.
   labels: summary.value.map((item) => item.product),
   datasets: [
     {
@@ -62,6 +64,7 @@ const interestChart = computed(() => ({
   ],
 }))
 const trendChart = computed(() => ({
+  // Pertahankan null dari backend untuk bulan mendatang agar grafik menyisakan celah.
   labels: months,
   datasets: [
     {

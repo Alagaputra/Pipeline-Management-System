@@ -11,8 +11,11 @@ class DashboardReport
 {
     public function build(int $year, ?int $divisionId): array
     {
+        // Pipeline aktif mencakup seluruh periode; Won/Lost dan realisasi tahunan
+        // mengikuti tahun closed_date. divisionId null berarti seluruh divisi.
         $query = Opportunity::query()->when($divisionId, fn ($q) => $q->where('division_id', $divisionId));
         $active = (clone $query)->where('outcome', 'Active');
+        // Clone query dasar agar filter satu metrik tidak terbawa ke metrik lainnya.
         $won = (clone $query)->where('outcome', 'Won')->whereYear('closed_date', $year);
         $scopes = Division::query()->when($divisionId, fn ($q) => $q->whereKey($divisionId))->pluck('code');
         $targets = AnnualTarget::whereIn('scope_code', $scopes)->where('year', $year)
@@ -23,6 +26,7 @@ class DashboardReport
             ->orderBy('id')->get()->map(function ($product) use ($targets, $actuals) {
                 $target = (int) ($targets[$product->id] ?? 0);
                 $realization = (int) ($actuals[$product->id] ?? 0);
+                // Target nol menghasilkan persentase null (belum ada target), bukan 0%.
                 return ['product' => $product->name, 'target' => $target, 'realization' => $realization,
                     'percentage' => $target > 0 ? $realization / $target * 100 : null,
                     'remaining' => max(0, $target - $realization)];
@@ -32,12 +36,13 @@ class DashboardReport
         $interest = (clone $active)->selectRaw('interest_status, COUNT(*) as total')->groupBy('interest_status')->pluck('total', 'interest_status');
         $due = (clone $active)->whereNotNull('follow_up_date')->where('follow_up_completed', false)
             ->whereDate('follow_up_date', '<=', today());
-        // Group dates in PHP so the same report is testable on SQLite and PostgreSQL.
+        // Kelompokkan tanggal di PHP agar logika laporan sama pada SQLite dan PostgreSQL.
         $recorded = (clone $query)->whereYear('recorded_date', $year)->get(['recorded_date', 'nominal'])
             ->groupBy(fn ($row) => (int) $row->recorded_date->format('n'));
         $closed = (clone $won)->get(['closed_date', 'realization'])
             ->groupBy(fn ($row) => (int) $row->closed_date->format('n'));
         $trend = collect(range(1, 12))->map(function ($month) use ($year, $recorded, $closed) {
+            // Bulan mendatang memakai null agar grafik tidak menampilkan realisasi nol semu.
             $future = $year > now()->year || ($year === now()->year && $month > now()->month);
             return ['month' => $month,
                 'recorded_nominal' => $future ? null : (int) ($recorded->get($month)?->sum('nominal') ?? 0),

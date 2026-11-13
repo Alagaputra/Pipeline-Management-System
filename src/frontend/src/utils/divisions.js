@@ -3,6 +3,7 @@ import { PRODUCTS, validateTargets } from './pipeline.js'
 import { validateStoredData } from './storage.js'
 
 export function migrateDivisions(data) {
+  // Kompatibilitas data lokal lama: seluruh peluang awal ditempatkan pada Komersil.
   validateStoredData(data)
   return {
     version: 3,
@@ -41,6 +42,7 @@ export function validateDivisionData(data) {
 const validYear = (year) => Number.isInteger(Number(year)) && year >= 2000 && year <= 2100
 const count = (value) => Number.isSafeInteger(value) && value >= 0
 export function validateUnitEntry(entry) {
+  // Produk layanan memakai hitungan unit, bukan rupiah; tiap bulan harus bulat nonnegatif.
   if (!entry || !count(entry.target) || !entry.monthly)
     throw new Error('Target unit harus bilangan bulat, minimal nol.')
   let total = 0
@@ -64,6 +66,7 @@ export function validateDivisionTargets(year, values, division) {
   return ''
 }
 export function aggregateTargets(targets) {
+  // Jumlahkan target kedua divisi per tahun/bulan untuk kebutuhan tampilan gabungan.
   const result = {}
   for (const division of DIVISIONS)
     for (const [year, values] of Object.entries(targets[division])) {

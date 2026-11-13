@@ -7,20 +7,25 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TargetController;
 use Illuminate\Support\Facades\Route;
 
+// Login tersedia tanpa token dan dibatasi 10 percobaan per menit.
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
+// Alur API terproteksi: Sanctum memeriksa token -> IdempotentWrite menangani retry
+// aksi tulis -> controller memvalidasi akses/aturan bisnis -> model/database.
 Route::middleware(['auth:sanctum', \App\Http\Middleware\IdempotentWrite::class])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/divisions', [LookupController::class, 'divisions']);
     Route::get('/products', [LookupController::class, 'products']);
     Route::get('/pics', [LookupController::class, 'pics']);
+    // Peluang: baca/buat/edit -> tindak lanjut -> closing Won/Lost.
     Route::get('/opportunities', [OpportunityController::class, 'index']);
     Route::post('/opportunities', [OpportunityController::class, 'store']);
     Route::get('/opportunities/{id}', [OpportunityController::class, 'show']);
     Route::patch('/opportunities/{id}', [OpportunityController::class, 'update']);
     Route::post('/opportunities/{id}/follow-up-completion', [OpportunityController::class, 'completeFollowUp']);
     Route::post('/opportunities/{id}/closing', [OpportunityController::class, 'close']);
+    // Target menyimpan rupiah atau unit; dashboard dan tim menyajikan hasil agregasi.
     Route::get('/targets', [TargetController::class, 'index']);
     Route::post('/targets/batch', [TargetController::class, 'batch']);
     Route::put('/targets/{scope}/{product}/{year}', [TargetController::class, 'upsert']);

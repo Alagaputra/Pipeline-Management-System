@@ -8,6 +8,7 @@ export const SEGMENTS = ['Mid', 'Large']
 export const OUTCOMES = ['Active', 'Won', 'Lost']
 export const isClosed = (row) => ['Won', 'Lost'].includes(row.outcome)
 export function localDate(date = new Date()) {
+  // Gunakan kalender lokal perangkat; toISOString dapat menggeser tanggal karena UTC.
   return (
     date.getFullYear() +
     '-' +
@@ -17,6 +18,7 @@ export function localDate(date = new Date()) {
   )
 }
 export function validDate(value) {
+  // Cocokkan ulang hasil parsing agar tanggal tidak nyata, seperti 31 Februari, ditolak.
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   const d = new Date(value + 'T00:00:00')
   return Number.isFinite(d.getTime()) && localDate(d) === value
@@ -48,7 +50,7 @@ export const money = (value) =>
   }).format(value)
 export const compactMoney = (value) => {
   const billions = value / 1e9
-  // Keep small amounts visible while using the same billion unit throughout the app.
+  // Sesuaikan desimal agar nominal kecil tetap terlihat dalam satuan miliar yang sama.
   const decimals =
     billions === 0 ? 2 : Math.min(9, Math.max(2, 2 - Math.floor(Math.log10(Math.abs(billions)))))
   return (
@@ -62,10 +64,12 @@ export const percent = (value) =>
     ? 'Belum ada target'
     : new Intl.NumberFormat('id-ID', { maximumFractionDigits: 1 }).format(value) + '%'
 export function dueState(row, today = localDate()) {
+  // Hanya follow-up peluang aktif yang belum selesai yang masuk antrean pengingat.
   if (isClosed(row) || !row.followUpDate || row.completed) return ''
   return row.followUpDate < today ? 'overdue' : row.followUpDate === today ? 'today' : 'upcoming'
 }
 export function annualSummary(rows, targets, year) {
+  // Realisasi rupiah berasal dari Won pada tahun closing, bukan nominal pipeline aktif.
   return PRODUCTS.map((product) => {
     const realization = rows
       .filter(
@@ -89,6 +93,7 @@ export function pipelineFieldErrors(
   row,
   { legacy = false, people = PEOPLE, products = PRODUCTS } = {},
 ) {
+  // Kembalikan error per field untuk form; validatePipeline mengambil pesan pertama.
   const errors = {}
   if (!row.customer?.trim()) errors.customer = 'Nama nasabah wajib diisi.'
   if (!validDate(row.date) || row.date > localDate())
@@ -123,6 +128,7 @@ export function validatePipeline(row, options) {
   return Object.values(pipelineFieldErrors(row, options))[0] || ''
 }
 export function validateTargets(year, values) {
+  // Target nol valid dan berarti belum ditetapkan; rupiah harus bilangan bulat aman.
   if (!Number.isInteger(Number(year)) || Number(year) < 2000 || Number(year) > 2100)
     return 'Tahun harus antara 2000 dan 2100.'
   if (PRODUCTS.some((product) => !Number.isSafeInteger(values[product]) || values[product] < 0))

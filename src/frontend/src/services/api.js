@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
 const TOKEN_KEY = 'pipeline-api-token'
+// Simpan payload asli selama hasil tulis belum pasti; retry dengan key yang sama
+// harus mengirim method/path/body yang sama ke middleware IdempotentWrite Laravel.
 const pendingWrites = new Map()
 let unauthorizedHandler = () => {}
 export const connectionProblem = ref('')
@@ -12,6 +14,7 @@ export function clearPendingWrites() {
   pendingWrites.clear()
 }
 export function saveToken(token, remember = true) {
+  // Ingat saya memakai localStorage; sesi biasa hanya bertahan di sessionStorage.
   clearToken()
   ;(remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token)
 }
@@ -20,6 +23,7 @@ export function clearToken() {
   sessionStorage.removeItem(TOKEN_KEY)
 }
 export async function api(path, options = {}) {
+  // Alur bersama: siapkan token/key -> fetch dengan timeout -> normalisasi hasil/error.
   const { requestKey, timeoutMs = 15000, ...supplied } = options
   if (requestKey) {
     if (!pendingWrites.has(requestKey)) pendingWrites.set(requestKey, { path, options: supplied })
@@ -35,6 +39,7 @@ export async function api(path, options = {}) {
   if (supplied.body && !(supplied.body instanceof FormData))
     headers['Content-Type'] = 'application/json'
   const controller = new AbortController()
+  // Timeout membatalkan penantian browser; server mungkin sudah menyimpan perubahan.
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   const signal = supplied.signal
     ? AbortSignal.any([supplied.signal, controller.signal])
@@ -64,8 +69,11 @@ export async function api(path, options = {}) {
       error.status = response.status
       error.fields = payload?.errors || {}
       error.uncertain = Boolean(requestKey && response.status >= 500)
+      // Pertahankan payload pada kegagalan server/jaringan karena hasil tulis belum pasti.
+      // Validasi atau konflik yang sudah jelas mengakhiri percobaan tersebut.
       if (!error.uncertain && requestKey) pendingWrites.delete(requestKey)
       if (response.status === 401 && path !== '/login') {
+        // Sesi kedaluwarsa: hapus token, buang retry akun lama, dan beri tahu useSession.
         clearToken()
         clearPendingWrites()
         unauthorizedHandler(message)

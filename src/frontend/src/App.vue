@@ -8,6 +8,8 @@ import AppIcon from './components/AppIcon.vue'
 import { DIVISIONS } from './data/access'
 import { usePipeline } from './composables/usePipeline'
 const route = useRoute()
+// Shell bersama menampilkan navigasi, cakupan divisi, dan status pemuatan/simpan.
+// Isi tiap halaman berasal dari RouterView dan berbagi state melalui usePipeline.
 const menuOpen = ref(false)
 const {
   storageError,
@@ -96,6 +98,7 @@ watch(
             <AppIcon name="close" :size="16" />
           </button>
         </p>
+        <!-- Buat ulang halaman saat rute/divisi berubah agar form tidak membawa data divisi lama. -->
         <RouterView :key="route.path + division" />
       </main>
       <footer class="app-footer">

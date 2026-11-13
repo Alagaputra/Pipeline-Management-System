@@ -3,6 +3,8 @@ import { onBeforeRouteLeave } from 'vue-router'
 import { confirmAction } from './useConfirm'
 import { useSession } from './useSession'
 export function useUnsavedChanges(dirty, saving) {
+  // Lindungi dua jalur keluar: navigasi Vue Router dan refresh/tutup tab browser.
+  // Selama simpan berjalan, navigasi internal ditahan; perubahan lain meminta konfirmasi.
   const { user } = useSession()
   onBeforeRouteLeave(async () => {
     if (!user.value) return true

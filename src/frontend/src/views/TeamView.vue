@@ -16,6 +16,7 @@ const opportunity = ref(null)
 const chartMode = ref('active')
 const sort = ref('active')
 const people = computed(() =>
+  // Ringkasan PIC: pipeline aktif seluruh periode, sedangkan Won/Lost mengikuti tahun pilihan.
   picRecords.value
     .filter((pic) => pic.name.toLowerCase().includes(search.value.toLowerCase()))
     .map((pic) => {
@@ -59,6 +60,7 @@ const people = computed(() =>
 )
 const selectedPerson = computed(() => people.value.find((person) => person.name === selected.value))
 const handled = computed(() =>
+  // Detail PIC juga menampilkan peluang yang pernah ditangani sebelum dialihkan.
   rows.value
     .filter((row) => row.pic === selected.value || row.handledBy.includes(selected.value))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),

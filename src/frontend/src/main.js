@@ -13,4 +13,5 @@ import './assets/analytics.css'
 import './assets/divisions.css'
 import './assets/ux.css'
 const app = createApp(App).use(router)
+// Pasang UI setelah router selesai memulihkan sesi dan menentukan halaman pertama.
 router.isReady().then(() => app.mount('#app'))

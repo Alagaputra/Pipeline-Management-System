@@ -36,6 +36,7 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 })
 router.beforeEach(async (to) => {
+  // Tunggu pemulihan sesi sebelum memutuskan akses halaman atau pengalihan ke login.
   const session = useSession()
   await session.initialize()
   if (to.path !== '/login' && !session.user.value) return '/login'
@@ -45,6 +46,7 @@ router.afterEach((to) => {
   document.title = (to.meta.title || 'Masuk') + ' · Pipeline Funding'
 })
 watch(useSession().user, (value) => {
+  // Tangani juga logout/sesi kedaluwarsa ketika pengguna sedang membuka suatu halaman.
   if (!value && router.currentRoute.value.path !== '/login') router.replace('/login')
 })
 export default router

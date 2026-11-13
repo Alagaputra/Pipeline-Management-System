@@ -4,6 +4,7 @@ import OpportunityList from '../components/OpportunityList.vue'
 import OpportunityDrawer from '../components/OpportunityDrawer.vue'
 import { usePipeline } from '../composables/usePipeline'
 const { closedRows } = usePipeline()
+// Riwayat memakai state yang sama dengan Pipeline, tetapi hanya memilih Won/Lost.
 const selected = ref(null)
 </script>
 <template>
