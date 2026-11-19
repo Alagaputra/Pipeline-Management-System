@@ -534,7 +534,7 @@ sequenceDiagram
     User->>UI: Simpan formulir
     UI->>API: Payload, bearer token, version, Idempotency-Key
     API->>API: Autentikasi dan pemeriksaan key
-    API->>DB: Mulai transaksi; kunci akun dan cari receipt
+    API->>DB: Mulai transaksi, kunci akun, dan cari receipt
     alt Key dan permintaan identik sudah tersimpan
         DB-->>API: Respons sukses sebelumnya
         API-->>UI: Respons lama dan Idempotency-Replayed: true
