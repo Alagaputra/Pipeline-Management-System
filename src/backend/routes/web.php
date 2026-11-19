@@ -1,7 +1,3 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
-Route::get('/', function () {
-    return view('welcome');
-});
+// Antarmuka aplikasi disediakan oleh frontend Vue; route API ada di api.php.
