@@ -3,10 +3,11 @@ import { PRODUCT_COLORS } from '../utils/productColors'
 import { computed } from 'vue'
 import AppIcon from './AppIcon.vue'
 import { compactMoney, money, percent } from '../utils/pipeline'
+import { sumAmounts } from '../utils/amounts'
 
 const props = defineProps({ items: Array, label: String })
 const colors = PRODUCT_COLORS
-const total = computed(() => props.items.reduce((sum, item) => sum + item.value, 0))
+const total = computed(() => sumAmounts(props.items.map((item) => item.value)))
 const portions = computed(() =>
   props.items.map((item) => ({
     ...item,

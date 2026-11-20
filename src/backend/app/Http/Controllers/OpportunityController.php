@@ -59,7 +59,7 @@ class OpportunityController extends Controller
         $divisionId = $this->divisionId($request);
         $data = $this->validated($request, $divisionId);
         return DB::transaction(function () use ($request, $divisionId, $data) {
-            $opportunity = Opportunity::create([...$data, 'division_id' => $divisionId, 'outcome' => 'Active', 'realization' => 0, 'created_by' => $request->user()->id, 'updated_by' => $request->user()->id]);
+            $opportunity = Opportunity::create([...$data, 'division_id' => $divisionId, 'outcome' => 'Active', 'realization' => 0, 'version' => 1, 'created_by' => $request->user()->id, 'updated_by' => $request->user()->id]);
             OpportunityAssignment::create(['opportunity_id' => $opportunity->id, 'pic_id' => $opportunity->pic_id, 'assigned_at' => now(), 'changed_by' => $request->user()->id]);
             $this->audit($request->user()->id, 'opportunity', $opportunity->id, 'created', null, $opportunity->toArray());
             return response()->json($opportunity->load(['division', 'pic', 'product']), 201);

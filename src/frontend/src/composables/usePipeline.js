@@ -1,4 +1,5 @@
 import { computed, ref, watch, nextTick } from 'vue'
+import { sumAmounts } from '../utils/amounts'
 import { DIVISIONS } from '../data/access'
 import {
   validatePipeline,
@@ -7,7 +8,7 @@ import {
   PRODUCTS as PRODUCT_ORDER,
 } from '../utils/pipeline'
 import { validateUnitEntry } from '../utils/divisions'
-import { api } from '../services/api'
+import { api, getPendingWrite } from '../services/api'
 import { useSession } from './useSession'
 // Pusat alur data: sesi/divisi/tahun -> muat API -> state bersama -> tampilan.
 // State di tingkat modul membuat semua pemanggil usePipeline berbagi data yang sama.
@@ -29,6 +30,21 @@ const { user } = useSession()
 // Nomor urut menolak respons lama yang selesai setelah permintaan baru dimulai.
 const sequences = { lookups: 0, rows: 0, targets: 0, dashboard: 0, refresh: 0 }
 let lookupKey = ''
+const validOpportunity = (value) =>
+  Number.isSafeInteger(Number(value?.id)) &&
+  Number(value.id) > 0 &&
+  Number.isSafeInteger(value.version) &&
+  value.version > 0
+const validTargets = (value) =>
+  Array.isArray(value) &&
+  value.length > 0 &&
+  value.every(
+    (item) =>
+      validOpportunity(item) &&
+      item.product?.code &&
+      item.scope_code &&
+      /^\d+$/.test(String(item.target_value)),
+  )
 const isHead = computed(() => user.value?.role === 'head')
 // Head dapat memilih semua divisi; aksi edit memerlukan satu divisi dan data siap.
 const division = computed(() => (isHead.value ? headDivision.value : user.value?.division || ''))
@@ -137,8 +153,6 @@ async function loadOpportunities(context) {
   if (current(context) && request === sequences.rows) rowsState.value = records.map(mapOpportunity)
 }
 function applyTargets(targets, branches, context) {
-  // Pisahkan target rupiah dari target unit. Map menyimpan record beserta version
-  // untuk penyimpanan berikutnya; angka ringkasan disusun untuk kebutuhan tampilan.
   if (!current(context)) return
   const annual = { Tabungan: 0, Giro: 0, Deposito: 0, bekasi: 0, monthly: {} },
     units = {},
@@ -148,26 +162,26 @@ function applyTargets(targets, branches, context) {
     const product = target.product.name
     map.set(`${target.scope_code}:${target.product.code}`, target)
     if (target.product.measure === 'IDR') {
-      annual[product] = (annual[product] || 0) + Number(target.target_value)
-      for (const item of target.monthly_targets || [])
-        (annual.monthly[item.month] ||= { Tabungan: 0, Giro: 0, Deposito: 0 })[product] += Number(
-          item.target_value,
-        )
+      annual[product] = sumAmounts([annual[product] || 0, target.target_value])
+      for (const item of target.monthly_targets || []) {
+        const month = (annual.monthly[item.month] ||= { Tabungan: 0, Giro: 0, Deposito: 0 })
+        month[product] = sumAmounts([month[product], item.target_value])
+      }
     } else {
       const entry = (units[product] ||= { target: 0, monthly: {} })
-      entry.target += Number(target.target_value)
-      for (const item of target.monthly_targets || [])
-        (entry.monthly[item.month] ||= { target: 0, realization: 0 }).target += Number(
-          item.target_value,
-        )
-      for (const item of target.unit_realizations || [])
-        (entry.monthly[item.month] ||= { target: 0, realization: 0 }).realization += Number(
-          item.units,
-        )
+      entry.target = sumAmounts([entry.target, target.target_value])
+      for (const item of target.monthly_targets || []) {
+        const month = (entry.monthly[item.month] ||= { target: 0, realization: 0 })
+        month.target = sumAmounts([month.target, item.target_value])
+      }
+      for (const item of target.unit_realizations || []) {
+        const month = (entry.monthly[item.month] ||= { target: 0, realization: 0 })
+        month.realization = sumAmounts([month.realization, item.units])
+      }
     }
   }
   for (const branch of branches) {
-    annual.bekasi += Number(branch.target_value)
+    annual.bekasi = sumAmounts([annual.bekasi, branch.target_value])
     branchMap.set(`${branch.division.code}:${branch.branch_code}`, branch)
   }
   annualState.value = { ...annualState.value, [context.year]: annual }
@@ -312,6 +326,19 @@ export function usePipeline() {
   // backend tetap memeriksa otorisasi, aturan bisnis, serta version data.
   async function save(row, { requestKey = crypto.randomUUID() } = {}) {
     requireDivision()
+    // Retry harus mencapai receipt server walaupun refresh sudah menemukan hasil closing.
+    const pending = getPendingWrite(requestKey)
+    if (pending) {
+      const context = capture()
+      const saved = await api(pending.path, {
+        ...pending.options,
+        requestKey,
+        validateResponse: validOpportunity,
+      })
+      const mapped = rememberRow(saved, context)
+      await afterWrite(context)
+      return mapped
+    }
     const context = capture(),
       previous = rows.value.find((item) => item.id === row.id)
     if (previous && isClosed(previous))
@@ -326,6 +353,7 @@ export function usePipeline() {
     if (row.outcome !== 'Active' && previous) {
       // Closing punya endpoint khusus; Won mengirim realisasi, Lost mengirim alasan.
       saved = await api(`/opportunities/${previous.id}/closing`, {
+        validateResponse: validOpportunity,
         method: 'POST',
         requestKey,
         body: JSON.stringify({
@@ -353,6 +381,7 @@ export function usePipeline() {
       if (previous) payload.version = row.version
       // Gunakan versi salinan form saat dibuka, meskipun state bersama sudah diperbarui.
       saved = await api(previous ? `/opportunities/${previous.id}` : '/opportunities', {
+        validateResponse: validOpportunity,
         method: previous ? 'PATCH' : 'POST',
         requestKey,
         body: JSON.stringify(payload),
@@ -369,6 +398,7 @@ export function usePipeline() {
       row = rows.value.find((item) => item.id === id)
     if (!row) throw new Error('Peluang tidak ditemukan.')
     const saved = await api(`/opportunities/${id}/follow-up-completion`, {
+      validateResponse: validOpportunity,
       method: 'POST',
       requestKey,
       body: JSON.stringify({ version: row.version }),
@@ -394,6 +424,7 @@ export function usePipeline() {
       }
     })
     const saved = await api('/targets/batch', {
+      validateResponse: validTargets,
       method: 'POST',
       requestKey,
       body: JSON.stringify({ year: context.year, scope, targets }),
@@ -424,6 +455,7 @@ export function usePipeline() {
       scope = product === 'CMS' ? 'shared' : context.scope.toLowerCase()
     const record = draft.versions[`${scope}:${productRecord.code}`]
     const saved = await api('/targets/batch', {
+      validateResponse: validTargets,
       method: 'POST',
       requestKey,
       body: JSON.stringify({

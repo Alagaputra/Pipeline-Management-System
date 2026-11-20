@@ -8,7 +8,7 @@ test('draft mempertahankan versi awal saat state diperbarui sebelum edit atau cl
   const server = await createServer({
     configFile: false,
     optimizeDeps: { noDiscovery: true, include: [] },
-    server: { middlewareMode: true, hmr: false },
+    server: { middlewareMode: true, hmr: false, ws: false },
   })
   t.after(() => server.close())
   for (const name of ['localStorage', 'sessionStorage']) {

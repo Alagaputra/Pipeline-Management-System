@@ -33,6 +33,18 @@ Sesudah deployment perubahan konfigurasi, bangun ulang cache konfigurasi (`php.c
 
 ## Laporan dan riwayat
 
+Total laporan dijumlahkan dengan integer presisi penuh. Nilai agregat sampai
+9.007.199.254.740.991 dikirim sebagai JSON number; nilai yang lebih besar dikirim
+sebagai string desimal agar tidak dibulatkan oleh JavaScript. Ini berlaku pada
+nominal aktif/Hot, realisasi, target, sisa target, tren bulanan, dan nominal aktif
+endpoint tim. Contoh: `"active_nominal":"9007199254740993"`. Persentase tetap
+berupa angka pecahan; batas input per field tidak berubah. Respons pembuatan
+peluang selalu menyertakan `version: 1` untuk penyimpanan berikutnya.
+
+Jumlah peluang dan nominal pada endpoint tim mengikuti divisi pengguna yang
+membaca, termasuk setelah PIC pindah divisi. Head tetap dapat melihat gabungan
+lintas divisi.
+
 `GET /api/dashboard?year=YYYY&division_id=ID` menghitung ringkasan, target/realisasi per produk, distribusi status, prioritas follow-up, dan tren bulanan di backend. PIC selalu dibatasi divisinya; Head Funding dapat memfilter divisi.
 
 `GET /api/opportunities/{id}` menyertakan `timeline` audit dengan pelaku dan perubahan. Target tahunan dapat disimpan tanpa mengirim target bulanan; data bulanan lama tetap dipertahankan.
@@ -56,6 +68,11 @@ Jalankan migration PostgreSQL tanpa seed terlebih dahulu. Database tujuan harus 
 Sumber MySQL tetap utuh. Jika sumber memakai password, gunakan variabel lingkungan `LEGACY_MYSQL_PASSWORD`. Token dan sesi lama tidak disalin; login kembali setelah perpindahan.
 
 ## Memperbarui instalasi
+
+Seed ulang mempertahankan akun, status produk, atribut master, dan relasi
+produk/divisi yang sudah ada. Relasi bawaan hanya dibuat untuk divisi baru.
+Pembaruan perhitungan eksak memakai dependensi `brick/math` yang tercantum pada
+lockfile; tidak memerlukan migration tambahan di luar migration akses berikut.
 
 Jalankan dari direktori `src/backend` sebelum membuka kembali akses aplikasi:
 

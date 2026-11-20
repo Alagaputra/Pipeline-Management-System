@@ -1,6 +1,6 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import OpportunityTable from './OpportunityTable.vue'
 import OpportunityCards from './OpportunityCards.vue'
@@ -64,6 +64,14 @@ const router = useRouter()
 const filterKeys = ['q', 'pic', 'product', 'status', 'sort', 'from', 'to', 'followup', 'page']
 const routePath = route.path
 let hydrating = false
+let leaving = false
+onBeforeRouteLeave(() => {
+  leaving = true
+})
+const stopNavigationWatch = router.afterEach(() => {
+  leaving = false
+})
+onBeforeUnmount(stopNavigationWatch)
 function readQuery() {
   if (route.path !== routePath) return
   hydrating = true
@@ -89,7 +97,7 @@ function readQuery() {
   hydrating = false
 }
 function writeQuery() {
-  if (hydrating || route.path !== routePath) return
+  if (hydrating || leaving || route.path !== routePath) return
   const query = { ...route.query }
   for (const key of filterKeys) delete query[key]
   for (const [key, value] of Object.entries({

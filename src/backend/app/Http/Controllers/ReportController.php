@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Opportunity;
 use App\Models\User;
+use App\Support\ExactAmount;
 use Illuminate\Http\Request;
 
 class ReportController extends Controller
@@ -25,12 +26,15 @@ class ReportController extends Controller
         $query = User::where('role', 'pic')->where('is_active', true)->with('division:id,code,name');
         if (!$request->user()->isHead()) $query->where('division_id', $request->user()->division_id);
         elseif ($request->filled('division_id')) $query->where('division_id', $request->integer('division_id'));
-        return $query->withCount([
-            'opportunities as total_pipeline',
-            'opportunities as active_pipeline' => fn ($q) => $q->where('outcome', 'Active'),
-            'opportunities as won' => fn ($q) => $q->where('outcome', 'Won'),
-            'opportunities as lost' => fn ($q) => $q->where('outcome', 'Lost'),
-        ])->withSum(['opportunities as active_nominal' => fn ($q) => $q->where('outcome', 'Active')], 'nominal')->get();
+        $scope = fn ($q) => $q->when(!$request->user()->isHead(), fn ($q) => $q->where('division_id', $request->user()->division_id));
+        $pics = $query->withCount([
+            'opportunities as total_pipeline' => $scope,
+            'opportunities as active_pipeline' => fn ($q) => $scope($q)->where('outcome', 'Active'),
+            'opportunities as won' => fn ($q) => $scope($q)->where('outcome', 'Won'),
+            'opportunities as lost' => fn ($q) => $scope($q)->where('outcome', 'Lost'),
+        ])->get();
+        $nominals = $scope(Opportunity::query())->whereIn('pic_id', $pics->modelKeys())->where('outcome', 'Active')->get(['pic_id', 'nominal'])->groupBy('pic_id');
+        return $pics->each(fn ($pic) => $pic->setAttribute('active_nominal', ExactAmount::sum($nominals->get($pic->id)?->pluck('nominal') ?? [])));
     }
 
     public function picOpportunities(Request $request, int $id)

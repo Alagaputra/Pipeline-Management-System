@@ -1,6 +1,7 @@
 import { DIVISIONS, divisionProducts } from '../data/access.js'
 import { PRODUCTS, validateTargets } from './pipeline.js'
 import { validateStoredData } from './storage.js'
+import { sumAmounts } from './amounts.js'
 
 export function migrateDivisions(data) {
   // Kompatibilitas data lokal lama: seluruh peluang awal ditempatkan pada Komersil.
@@ -45,13 +46,10 @@ export function validateUnitEntry(entry) {
   // Produk layanan memakai hitungan unit, bukan rupiah; tiap bulan harus bulat nonnegatif.
   if (!entry || !count(entry.target) || !entry.monthly)
     throw new Error('Target unit harus bilangan bulat, minimal nol.')
-  let total = 0
   for (const [month, value] of Object.entries(entry.monthly)) {
     if (!/^(?:[1-9]|1[0-2])$/.test(month) || !count(value.target) || !count(value.realization))
       throw new Error('Target dan realisasi bulanan harus unit bulat, minimal nol.')
-    total += value.realization
   }
-  if (!Number.isSafeInteger(total)) throw new Error('Jumlah realisasi unit terlalu besar.')
 }
 export function validateDivisionTargets(year, values, division) {
   const error = validateTargets(year, values)
@@ -77,10 +75,12 @@ export function aggregateTargets(targets) {
         bekasi: 0,
         monthly: {},
       })
-      for (const product of [...PRODUCTS, 'bekasi']) target[product] += Number(values[product]) || 0
+      for (const product of [...PRODUCTS, 'bekasi'])
+        target[product] = sumAmounts([target[product], values[product] || 0])
       for (const [month, products] of Object.entries(values.monthly || {})) {
         const entry = (target.monthly[month] ||= { Tabungan: 0, Giro: 0, Deposito: 0 })
-        for (const product of PRODUCTS) entry[product] += Number(products[product]) || 0
+        for (const product of PRODUCTS)
+          entry[product] = sumAmounts([entry[product], products[product] || 0])
       }
     }
   return result

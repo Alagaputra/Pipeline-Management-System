@@ -2,6 +2,7 @@
 import { productColor } from '../utils/productColors'
 import { computed } from 'vue'
 import { compactMoney, money, percent } from '../utils/pipeline'
+import { remainingAmount, formatInteger } from '../utils/amounts'
 const props = defineProps({
   item: { type: Object, required: true },
   unit: Boolean,
@@ -11,9 +12,8 @@ const props = defineProps({
 const percentage = computed(() =>
   props.item.target > 0 ? (props.item.realization / props.item.target) * 100 : null,
 )
-const remaining = computed(() => Math.max(0, props.item.target - props.item.realization))
-const format = (value) =>
-  props.unit ? new Intl.NumberFormat('id-ID').format(value) + ' unit' : compactMoney(value)
+const remaining = computed(() => remainingAmount(props.item.target, props.item.realization))
+const format = (value) => (props.unit ? formatInteger(value) + ' unit' : compactMoney(value))
 const full = (value) => (props.unit ? format(value) : money(value))
 </script>
 <template>

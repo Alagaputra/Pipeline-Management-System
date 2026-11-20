@@ -765,6 +765,10 @@ kredensial yang sesuai. Akun demo yang sudah terlanjur dibuat tidak otomatis
 dihapus: ganti kredensial atau nonaktifkan sebelum penggunaan publik.
 Seeder tidak membuat peluang maupun nilai target contoh.
 
+Seed ulang juga mempertahankan status aktif produk, atribut master yang sudah
+ada, dan relasi produk/divisi yang diatur administrator. Relasi produk bawaan
+hanya dipasang ketika divisi pertama kali dibuat.
+
 Token API berlaku 480 menit (8 jam), dapat diatur melalui `SANCTUM_EXPIRATION`
 dengan nilai minimal 1 menit. Batas umur ini juga berlaku pada token lama tanpa
 `expires_at`. Login ulang mencabut token sebelumnya; logout mencabut token yang
@@ -775,6 +779,19 @@ akses yang tidak valid melalui query database langsung juga ditolak dan token
 dicabut ketika akun berikutnya mengakses API.
 
 ## Memperbarui instalasi
+
+Pembaruan keandalan terbaru menolak respons sukses dengan JSON atau bentuk data
+yang tidak valid, mempertahankan draft serta payload retry, dan mengabaikan
+respons dari sesi lama. Retry closing tetap mencapai receipt server meskipun
+refresh sudah menemukan hasil Won/Lost tersimpan.
+
+Total nominal, realisasi, target, dan unit dihitung secara eksak. Pada respons
+laporan, total sampai 9.007.199.254.740.991 tetap berupa JSON number; total yang
+lebih besar berupa string desimal, misalnya `"9007199254740993"`. Klien API harus
+mempertahankan string tersebut atau memakai aritmetika integer presisi penuh.
+Frontend menjaga nilai dan format rupiah/unit tetap eksak; skala grafik serta
+persentase menggunakan angka pecahan untuk visualisasi. Batas input per field
+tetap sama. Tidak ada migration tambahan untuk pembaruan keandalan ini.
 
 Setelah memperbarui sumber aplikasi, pasang dependensi sesuai lockfile dan
 bangun frontend dari direktori utama:
@@ -836,17 +853,24 @@ Hasil verifikasi perubahan keamanan pada **20 November 2026**:
 
 | Pemeriksaan | Hasil |
 | --- | --- |
-| Tes frontend | 19 lulus, termasuk draft target lama dan perubahan konteks |
-| Tes backend | 40 lulus, 288 assertion, memakai SQLite in-memory |
+| Tes frontend | 28 lulus, termasuk draft, respons rusak, isolasi sesi, retry, dan total eksak |
+| Tes backend | 45 lulus, 323 assertion, memakai SQLite in-memory |
+| E2E browser | 31 lulus di Edge dengan PostgreSQL pengujian |
 | Build frontend | Berhasil |
 | `npm audit` pada root dan frontend | 0 advisory saat pemeriksaan |
 | `composer audit --locked` | 0 advisory saat pemeriksaan |
-| E2E browser dan server produksi | Belum diperiksa pada verifikasi ini |
+| Server produksi | Belum diperiksa pada verifikasi ini |
 
 Tes regresi mencakup akses riwayat setelah PIC pindah divisi, akun tanpa divisi
 atau dengan peran tidak valid, token setelah perubahan akses, replay dengan
 konteks berbeda/receipt lama, produk nonaktif, dan batas angka. Hasil audit
 dependensi merupakan hasil pada waktu pemeriksaan, bukan jaminan bebas celah.
+
+Pengujian browser memakai Edge dan PostgreSQL `pipeline_funding_test`. Skenario
+mencakup layout desktop/ponsel, navigasi dan filter URL, simpan, closing Won/Lost,
+retry setelah refresh, respons rusak, serta transaksi target. Penulisan filter
+dari halaman yang sedang ditinggalkan tidak membatalkan navigasi ke Riwayat.
+Agregasi endpoint Tim juga dibatasi pada divisi pembaca setelah PIC berpindah.
 
 Untuk pengujian browser, siapkan PostgreSQL **`pipeline_funding_test`** yang
 terpisah dari database aplikasi, lalu jalankan migration dan seed pada database

@@ -1,5 +1,6 @@
 export const PRODUCTS = ['Tabungan', 'Giro', 'Deposito']
 import { ACCOUNTS } from '../data/access.js'
+import { sumAmounts, remainingAmount } from './amounts.js'
 export const PEOPLE = ACCOUNTS.filter((account) => account.role === 'pic').map(
   (account) => account.name,
 )
@@ -48,8 +49,9 @@ export const money = (value) =>
     style: 'currency',
     currency: 'IDR',
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(typeof value === 'number' && !Number.isInteger(value) ? value : BigInt(value ?? 0))
 export const compactMoney = (value) => {
+  if (!Number.isSafeInteger(Number(value))) return money(value)
   const billions = value / 1e9
   // Sesuaikan desimal agar nominal kecil tetap terlihat dalam satuan miliar yang sama.
   const decimals =
@@ -72,21 +74,23 @@ export function dueState(row, today = localDate()) {
 export function annualSummary(rows, targets, year) {
   // Realisasi rupiah berasal dari Won pada tahun closing, bukan nominal pipeline aktif.
   return PRODUCTS.map((product) => {
-    const realization = rows
-      .filter(
-        (row) =>
-          row.outcome === 'Won' &&
-          row.product === product &&
-          Number(row.closedDate?.slice(0, 4)) === Number(year),
-      )
-      .reduce((sum, row) => sum + row.realization, 0)
+    const realization = sumAmounts(
+      rows
+        .filter(
+          (row) =>
+            row.outcome === 'Won' &&
+            row.product === product &&
+            Number(row.closedDate?.slice(0, 4)) === Number(year),
+        )
+        .map((row) => row.realization),
+    )
     const target = targets?.[product] ?? 0
     return {
       product,
       target,
       realization,
       percentage: target > 0 ? (realization / target) * 100 : null,
-      remaining: Math.max(0, target - realization),
+      remaining: remainingAmount(target, realization),
     }
   })
 }

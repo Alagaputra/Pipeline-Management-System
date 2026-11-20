@@ -16,8 +16,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $konsumer = Division::updateOrCreate(['code' => 'konsumer'], ['name' => 'Konsumer']);
-        $komersil = Division::updateOrCreate(['code' => 'komersil'], ['name' => 'Komersil']);
+        $konsumer = Division::firstOrCreate(['code' => 'konsumer'], ['name' => 'Konsumer']);
+        $komersil = Division::firstOrCreate(['code' => 'komersil'], ['name' => 'Komersil']);
 
         $products = collect([
             ['code' => 'tabungan', 'name' => 'Tabungan', 'measure' => 'IDR'],
@@ -26,14 +26,15 @@ class DatabaseSeeder extends Seeder
             ['code' => 'bale-syariah', 'name' => 'Bale Syariah', 'measure' => 'UNIT'],
             ['code' => 'qris', 'name' => 'QRIS', 'measure' => 'UNIT'],
             ['code' => 'cms', 'name' => 'CMS', 'measure' => 'UNIT'],
-        ])->mapWithKeys(fn ($row) => [$row['code'] => Product::updateOrCreate(['code' => $row['code']], [...$row, 'is_active' => true])]);
+        ])->mapWithKeys(fn ($row) => [$row['code'] => Product::firstOrCreate(['code' => $row['code']], [...$row, 'is_active' => true])]);
 
-        $konsumer->products()->sync($products->only(['tabungan', 'deposito', 'bale-syariah', 'qris', 'cms'])->pluck('id'));
-        $komersil->products()->sync($products->only(['tabungan', 'giro', 'deposito', 'cms'])->pluck('id'));
+        // Relasi bawaan hanya untuk divisi baru; pengaturan administrator tetap utuh.
+        if ($konsumer->wasRecentlyCreated) $konsumer->products()->sync($products->only(['tabungan', 'deposito', 'bale-syariah', 'qris', 'cms'])->pluck('id'));
+        if ($komersil->wasRecentlyCreated) $komersil->products()->sync($products->only(['tabungan', 'giro', 'deposito', 'cms'])->pluck('id'));
 
-        TargetScope::updateOrCreate(['code' => 'konsumer'], ['division_id' => $konsumer->id, 'label' => 'Konsumer']);
-        TargetScope::updateOrCreate(['code' => 'komersil'], ['division_id' => $komersil->id, 'label' => 'Komersil']);
-        TargetScope::updateOrCreate(['code' => 'shared'], ['division_id' => null, 'label' => 'Bersama']);
+        TargetScope::firstOrCreate(['code' => 'konsumer'], ['division_id' => $konsumer->id, 'label' => 'Konsumer']);
+        TargetScope::firstOrCreate(['code' => 'komersil'], ['division_id' => $komersil->id, 'label' => 'Komersil']);
+        TargetScope::firstOrCreate(['code' => 'shared'], ['division_id' => null, 'label' => 'Bersama']);
 
         // Akun dengan kredensial demo hanya boleh dibuat di pengembangan/pengujian.
         if (!app()->environment(['local', 'testing'])) {

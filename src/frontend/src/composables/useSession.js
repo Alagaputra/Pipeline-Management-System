@@ -7,6 +7,7 @@ import {
   saveToken,
   setUnauthorizedHandler,
   clearPendingWrites,
+  getSessionVersion,
 } from '../services/api'
 
 const user = ref(null)
@@ -34,21 +35,38 @@ async function initialize() {
   // Pulihkan akun dari token saat aplikasi dibuka. Bagikan promise yang sama agar
   // beberapa pemanggil tidak mengirim /me secara bersamaan.
   if (user.value || !getToken()) return user.value
-  if (!initialization)
-    initialization = api('/me')
-      .then((value) => (user.value = normalizeUser(value)))
+  const token = getToken(),
+    version = getSessionVersion()
+  const current = () => token === getToken() && version === getSessionVersion()
+  if (!initialization || initialization.token !== token || initialization.version !== version) {
+    const entry = { token, version }
+    entry.promise = api('/me')
+      .then((value) => {
+        if (current()) user.value = normalizeUser(value)
+        return user.value
+      })
       .catch((error) => {
+        if (!current() || error.staleSession) return user.value
         if (error.status === 401) clearToken()
         sessionNotice.value = error.message
         user.value = null
       })
-      .finally(() => (initialization = null))
-  return initialization
+      .finally(() => {
+        if (initialization === entry) initialization = null
+      })
+    initialization = entry
+  }
+  return initialization.promise
 }
 
 export function useSession() {
   async function login(name, remember, password) {
     const response = await api('/login', {
+      validateResponse: (value) =>
+        typeof value.token === 'string' &&
+        value.token.length > 0 &&
+        value.user?.id &&
+        value.user.username,
       method: 'POST',
       body: JSON.stringify({ username: name.trim().toLowerCase(), password }),
     })
@@ -60,14 +78,18 @@ export function useSession() {
     return user.value
   }
   async function logout() {
+    const token = getToken(),
+      version = getSessionVersion()
     try {
       if (getToken()) await api('/logout', { method: 'POST' })
     } catch {
       // Keluar di perangkat tetap diselesaikan meskipun server tidak dapat dijangkau.
     } finally {
-      clearToken()
-      clearPendingWrites()
-      user.value = null
+      if (token === getToken() && version === getSessionVersion()) {
+        clearToken()
+        clearPendingWrites()
+        user.value = null
+      }
     }
   }
   return { user, sessionNotice, login, logout, initialize }

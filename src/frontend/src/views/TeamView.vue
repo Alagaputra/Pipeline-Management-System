@@ -8,6 +8,7 @@ import StatusBadge from '../components/StatusBadge.vue'
 import ProductDistribution from '../components/ProductDistribution.vue'
 import { usePipeline } from '../composables/usePipeline'
 import { compactMoney, isClosed, dateLabel } from '../utils/pipeline'
+import { sumAmounts, compareAmounts } from '../utils/amounts'
 import { divisionProducts } from '../data/access'
 const { rows, selectedYear, picRecords } = usePipeline()
 const search = ref('')
@@ -31,22 +32,24 @@ const people = computed(() =>
         name: pic.name,
         division: pic.division?.name || '',
         active: active.length,
-        nominal: active.reduce((sum, row) => sum + row.nominal, 0),
+        nominal: sumAmounts(active.map((row) => row.nominal)),
         won: closed.filter((row) => row.outcome === 'Won').length,
         lost: closed.filter((row) => row.outcome === 'Lost').length,
-        realized: closed
-          .filter((row) => row.outcome === 'Won')
-          .reduce((sum, row) => sum + row.realization, 0),
+        realized: sumAmounts(
+          closed.filter((row) => row.outcome === 'Won').map((row) => row.realization),
+        ),
         distribution: divisionProducts(pic.division?.name).map((product) => ({
           product,
           value:
             chartMode.value === 'active'
-              ? active
-                  .filter((row) => row.product === product)
-                  .reduce((sum, row) => sum + row.nominal, 0)
-              : closed
-                  .filter((row) => row.product === product && row.outcome === 'Won')
-                  .reduce((sum, row) => sum + row.realization, 0),
+              ? sumAmounts(
+                  active.filter((row) => row.product === product).map((row) => row.nominal),
+                )
+              : sumAmounts(
+                  closed
+                    .filter((row) => row.product === product && row.outcome === 'Won')
+                    .map((row) => row.realization),
+                ),
         })),
       }
     })
@@ -54,8 +57,8 @@ const people = computed(() =>
       sort.value === 'name'
         ? a.name.localeCompare(b.name)
         : sort.value === 'realized'
-          ? b.realized - a.realized || a.name.localeCompare(b.name)
-          : b.nominal - a.nominal || a.name.localeCompare(b.name),
+          ? compareAmounts(b.realized, a.realized) || a.name.localeCompare(b.name)
+          : compareAmounts(b.nominal, a.nominal) || a.name.localeCompare(b.name),
     ),
 )
 const selectedPerson = computed(() => people.value.find((person) => person.name === selected.value))

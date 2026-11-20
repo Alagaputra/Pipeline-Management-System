@@ -115,6 +115,11 @@ test('closing mengirim satu operasi dan retry respons terputus tidak mengulang c
   await page.getByRole('button', { name: 'Simpan closing Won', exact: true }).click()
   await page.getByRole('button', { name: 'Konfirmasi closing Won', exact: true }).click()
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Koneksi terputus')
+  // Refresh dapat menemukan hasil closing sebelum pengguna menekan Coba lagi.
+  await page.evaluate(async () => {
+    const { usePipeline } = await import('/src/composables/usePipeline.js')
+    await usePipeline().refresh()
+  })
   await page.getByRole('dialog').getByRole('button', { name: 'Coba lagi', exact: true }).click()
   await expect(page.getByRole('dialog')).not.toBeVisible()
   expect(writes).toHaveLength(2)
@@ -158,6 +163,33 @@ test('simpan target dana dan layanan masing-masing menggunakan satu permintaan t
       .getByRole('article', { name: 'Target unit Bale Syariah', exact: true })
       .locator('[data-metric=target]'),
   ).toHaveText('240 unit')
+})
+
+test('respons HTML 200 tidak menutup draft dan retry menyimpan satu peluang', async ({ page }) => {
+  await login(page)
+  const name = unique('invalid-json'),
+    dialog = await createForm(page, name)
+  let first = true
+  await page.route('**/api/opportunities', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue()
+    if (first) {
+      first = false
+      return route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<html>gateway response</html>',
+      })
+    }
+    return route.continue()
+  })
+  await dialog.getByRole('button', { name: 'Simpan peluang', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('Respons layanan tidak valid')
+  await expect(dialog.getByLabel('Nama nasabah')).toHaveValue(name)
+  await expect(dialog.getByLabel('Nama nasabah')).toBeDisabled()
+  expect(await find(page, name)).toHaveLength(0)
+  await dialog.getByRole('button', { name: 'Coba lagi', exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+  expect(await find(page, name)).toHaveLength(1)
 })
 
 test('PostgreSQL membatalkan seluruh perubahan formulir saat produk atau bulan berkonflik', async ({

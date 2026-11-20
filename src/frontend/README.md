@@ -56,8 +56,22 @@ API menolak input di atas batas tersebut dengan 422 tanpa mengubah data lama.
 
 ## Verifikasi dan pembaruan
 
+Respons HTTP sukses dengan JSON rusak atau bentuk data penyimpanan yang tidak
+sesuai ditolak dan diperlakukan sebagai hasil belum pasti. Draft tetap terbuka;
+retry memakai key dan payload asli, termasuk ketika refresh sudah menemukan
+closing tersimpan. Respons request sesi lama tidak menghapus token atau profil
+akun yang baru login.
+
+Agregasi nominal, target, dan unit memakai integer eksak. Total besar disimpan
+sebagai string desimal dan diformat tanpa pembulatan rupiah/unit; konversi ke
+angka pecahan hanya untuk persentase dan skala grafik. Saat total melampaui batas
+integer aman JavaScript, tampilan rupiah memakai nilai lengkap.
+
 `npm.cmd test` mencakup validasi, migrasi data lokal, draft peluang/closing,
 konflik versi target rupiah dan unit, serta perubahan konteks divisi/tahun.
+Tes tambahan memverifikasi presisi total besar, respons rusak, isolasi sesi,
+dan retry closing setelah refresh. Suite browser mencakup navigasi riwayat
+serta respons HTML 200 tanpa kehilangan draft.
 Hasil verifikasi dan batas pemeriksaan terakhir tersedia pada
 [README utama](../../README.md#build-dan-pengujian).
 

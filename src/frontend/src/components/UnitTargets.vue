@@ -4,6 +4,7 @@ import { confirmAction } from '../composables/useConfirm'
 import { useUnsavedChanges } from '../composables/useUnsavedChanges'
 import { UNIT_PRODUCTS } from '../data/access'
 import { percent } from '../utils/pipeline'
+import { sumAmounts, formatInteger } from '../utils/amounts'
 import { usePipeline } from '../composables/usePipeline'
 import TargetCard from './TargetCard.vue'
 import TargetCardGrid from './TargetCardGrid.vue'
@@ -37,16 +38,13 @@ const months = [
   'Desember',
 ]
 const month = ref(new Date().getMonth() + 1)
-const unit = (value) => new Intl.NumberFormat('id-ID').format(value) + ' unit'
+const unit = (value) => formatInteger(value) + ' unit'
 const percentage = (actual, target) => (target > 0 ? (actual / target) * 100 : null)
 const entries = computed(() =>
   UNIT_PRODUCTS.filter((product) => division.value !== 'Komersil' || product === 'CMS').map(
     (product) => {
       const entry = getUnitTarget(product, selectedYear.value)
-      const realization = Object.values(entry.monthly).reduce(
-        (sum, item) => sum + item.realization,
-        0,
-      )
+      const realization = sumAmounts(Object.values(entry.monthly).map((item) => item.realization))
       const monthly = entry.monthly[month.value] || { target: 0, realization: 0 }
       return {
         product,
