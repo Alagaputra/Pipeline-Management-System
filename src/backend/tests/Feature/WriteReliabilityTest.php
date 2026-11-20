@@ -143,6 +143,40 @@ class WriteReliabilityTest extends TestCase
         $this->assertSame('shared', AnnualTarget::sole()->scope_code);
     }
 
+    public function test_stale_edit_and_closing_preserve_newer_notes(): void
+    {
+        $payload = $this->opportunity();
+        $id = $this->postJson('/api/opportunities', $payload)->assertCreated()->json('id');
+        $this->patchJson("/api/opportunities/{$id}", [...$payload, 'notes' => 'Catatan pengguna lain', 'version' => 1])->assertOk();
+
+        $this->patchJson("/api/opportunities/{$id}", [...$payload, 'version' => 1])->assertConflict();
+        foreach (['Won', 'Lost'] as $outcome) {
+            $this->postJson("/api/opportunities/{$id}/closing", [
+                'outcome' => $outcome, 'closed_date' => today()->format('Y-m-d'),
+                'realization' => 1000, 'lost_reason' => 'Batal', 'notes' => 'Catatan lama', 'version' => 1,
+            ])->assertConflict();
+        }
+        $this->assertDatabaseHas('opportunities', ['id' => $id, 'notes' => 'Catatan pengguna lain', 'version' => 2, 'outcome' => 'Active']);
+        $this->assertDatabaseCount('audit_events', 2);
+    }
+
+    public function test_api_accepts_text_at_shared_limits_and_rejects_longer_input(): void
+    {
+        foreach (['a', '😀'] as $character) {
+            $payload = [...$this->opportunity(), 'customer_name' => str_repeat($character, 160), 'notes' => str_repeat($character, 5000)];
+            $id = $this->postJson('/api/opportunities', $payload)->assertCreated()->json('id');
+            $this->patchJson("/api/opportunities/{$id}", [...$payload, 'version' => 1])->assertOk();
+            foreach (['customer_name', 'notes'] as $field) {
+                $this->patchJson("/api/opportunities/{$id}", [...$payload, $field => $payload[$field].$character, 'version' => 2])
+                    ->assertUnprocessable()->assertJsonValidationErrors($field);
+            }
+            $closing = ['outcome' => 'Lost', 'closed_date' => today()->format('Y-m-d'), 'lost_reason' => str_repeat($character, 2000), 'version' => 2];
+            $this->postJson("/api/opportunities/{$id}/closing", [...$closing, 'lost_reason' => $closing['lost_reason'].$character])
+                ->assertUnprocessable()->assertJsonValidationErrors('lost_reason');
+            $this->postJson("/api/opportunities/{$id}/closing", [...$closing, 'notes' => $payload['notes']])->assertOk();
+        }
+    }
+
     public function test_legacy_small_records_remain_editable_without_accepting_new_small_records(): void
     {
         $payload = [...$this->opportunity(), 'segment' => 'Small'];

@@ -729,10 +729,21 @@ Seeder menyiapkan master divisi, produk, cakupan target, dan akun berikut:
 | `nisa`   | Nisa         | PIC   | Konsumer       |
 | `head`   | Head Funding | Head  | Seluruh divisi |
 
-Password demo seluruh akun: `demo123`. Akun ini untuk pengembangan. Seeder
-menggunakan `updateOrCreate` dan menetapkan ulang password akun demo ketika
-dijalankan; siapkan akun dan kredensial yang sesuai sebelum penggunaan publik.
+Password demo seluruh akun: `demo123`. Akun hanya dibuat ketika `APP_ENV=local`
+atau `testing`. Seed ulang mempertahankan password, status aktif, peran, dan
+profil akun yang sudah ada. Di lingkungan lain (termasuk produksi), seeder
+hanya menyiapkan master data; akun harus disediakan secara terpisah dengan
+kredensial yang sesuai. Akun demo yang sudah terlanjur dibuat tidak otomatis
+dihapus: ganti kredensial atau nonaktifkan sebelum penggunaan publik.
 Seeder tidak membuat peluang maupun nilai target contoh.
+
+Token API berlaku 480 menit (8 jam), dapat diatur melalui `SANCTUM_EXPIRATION`
+dengan nilai minimal 1 menit. Batas umur ini juga berlaku pada token lama tanpa
+`expires_at`. Login ulang mencabut token sebelumnya; logout mencabut token yang
+dipakai. Setiap request terproteksi memeriksa status aktif sebelum memproses
+permintaan atau mengembalikan hasil retry. Penonaktifan melalui model `User`
+langsung mencabut semua token; perubahan langsung di database juga ditolak
+dan token dicabut ketika akun berikutnya mengakses API.
 
 ## Build dan pengujian
 

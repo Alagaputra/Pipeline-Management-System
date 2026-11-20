@@ -19,7 +19,12 @@ class AuthController extends Controller
         }
         $user->tokens()->delete();
         // Login baru mencabut seluruh token lama milik akun ini.
-        return response()->json(['token' => $user->createToken('vue-app')->plainTextToken, 'user' => $user]);
+        $expiresAt = now()->addMinutes(config('sanctum.expiration'));
+        return response()->json([
+            'token' => $user->createToken('vue-app', ['*'], $expiresAt)->plainTextToken,
+            'expires_at' => $expiresAt->toIso8601String(),
+            'user' => $user,
+        ]);
     }
 
     public function me(Request $request) { return $request->user()->load('division'); }

@@ -35,6 +35,11 @@ class DatabaseSeeder extends Seeder
         TargetScope::updateOrCreate(['code' => 'komersil'], ['division_id' => $komersil->id, 'label' => 'Komersil']);
         TargetScope::updateOrCreate(['code' => 'shared'], ['division_id' => null, 'label' => 'Bersama']);
 
+        // Akun dengan kredensial demo hanya boleh dibuat di pengembangan/pengujian.
+        if (!app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         foreach ([
             ['suci', 'Suci', $komersil->id, 'pic'],
             ['cacan', 'Cacan', $komersil->id, 'pic'],
@@ -42,7 +47,7 @@ class DatabaseSeeder extends Seeder
             ['nisa', 'Nisa', $konsumer->id, 'pic'],
             ['head', 'Head Funding', null, 'head'],
         ] as [$username, $name, $divisionId, $role]) {
-            User::updateOrCreate(['username' => $username], [
+            User::firstOrCreate(['username' => $username], [
                 'name' => $name, 'division_id' => $divisionId, 'role' => $role,
                 'password' => Hash::make('demo123'), 'is_active' => true,
             ]);

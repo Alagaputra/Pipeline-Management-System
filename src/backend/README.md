@@ -25,7 +25,11 @@ composer install
 
 Windows: `php.cmd` mengaktifkan `pdo_pgsql` melalui `php-conf.d/postgresql.ini` tanpa mengubah PHP global. PHP harus menyediakan ekstensi tersebut. Pada platform lain, aktifkan ekstensi melalui instalasi PHP dan gunakan `php artisan`.
 
-API: http://127.0.0.1:8000/api. Login contoh memakai `suci`, `cacan`, `dharma`, `nisa`, atau `head` dengan password `demo123`. Autentikasi bearer token Laravel Sanctum.
+API: http://127.0.0.1:8000/api. Pada `APP_ENV=local` atau `testing`, seeder membuat akun `suci`, `cacan`, `dharma`, `nisa`, dan `head` dengan password `demo123` jika belum ada. Seed ulang tidak mengubah akun yang sudah ada. Di produksi atau lingkungan lain, seeder hanya menyiapkan master data tanpa membuat akun demo; sediakan akun produksi secara terpisah. Akun demo lama tidak dihapus otomatis, sehingga kredensialnya perlu diganti atau akunnya dinonaktifkan sebelum penggunaan publik.
+
+Autentikasi memakai bearer token Laravel Sanctum dengan masa berlaku 480 menit (8 jam). Atur `SANCTUM_EXPIRATION` untuk mengubah batas umur (minimal 1 menit); token lama tanpa `expires_at` juga mengikuti batas ini. Setiap request terproteksi memeriksa akun aktif sebelum controller dan replay idempotensi. Penonaktifan melalui model `User` mencabut seluruh token; perubahan langsung di database ditolak dan token dicabut pada akses API berikutnya. Login ulang mencabut seluruh token lama dan logout mencabut token saat ini.
+
+Sesudah deployment perubahan konfigurasi, bangun ulang cache konfigurasi (`php.cmd artisan config:cache`) jika server menggunakannya. Perubahan ini tidak memerlukan seed ulang dan tidak mengubah kredensial akun yang sudah ada.
 
 ## Laporan dan riwayat
 

@@ -6,6 +6,7 @@ export const PEOPLE = ACCOUNTS.filter((account) => account.role === 'pic').map(
 export const STATUSES = ['Cold', 'Warm', 'Hot']
 export const SEGMENTS = ['Mid', 'Large']
 export const OUTCOMES = ['Active', 'Won', 'Lost']
+export const PIPELINE_TEXT_LIMITS = { customer: 160, notes: 5000, lostReason: 2000 }
 export const isClosed = (row) => ['Won', 'Lost'].includes(row.outcome)
 export function localDate(date = new Date()) {
   // Gunakan kalender lokal perangkat; toISOString dapat menggeser tanggal karena UTC.
@@ -118,10 +119,15 @@ export function pipelineFieldErrors(
     if (row.outcome === 'Lost' && !row.lostReason?.trim())
       errors.lostReason = 'Tuliskan alasan opportunity Lost.'
   }
-  if ((row.customer || '').length > 120) errors.customer = 'Nama nasabah maksimal 120 karakter.'
-  if ((row.notes || '').length > 2000) errors.notes = 'Catatan maksimal 2000 karakter.'
-  if ((row.lostReason || '').length > 1000)
-    errors.lostReason = 'Alasan Lost maksimal 1000 karakter.'
+  for (const [key, label] of Object.entries({
+    customer: 'Nama nasabah',
+    notes: 'Catatan',
+    lostReason: 'Alasan Lost',
+  })) {
+    // Laravel menghitung karakter Unicode, bukan unit UTF-16 JavaScript.
+    if (Array.from(row[key] || '').length > PIPELINE_TEXT_LIMITS[key])
+      errors[key] = `${label} maksimal ${PIPELINE_TEXT_LIMITS[key]} karakter.`
+  }
   return errors
 }
 export function validatePipeline(row, options) {

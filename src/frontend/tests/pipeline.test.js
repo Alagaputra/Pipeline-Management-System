@@ -7,6 +7,7 @@ import {
   validateTargets,
   localDate,
   validDate,
+  pipelineFieldErrors,
 } from '../src/utils/pipeline.js'
 import { migrateLegacy, validateStoredData } from '../src/utils/storage.js'
 const today = localDate()
@@ -82,6 +83,23 @@ test('target menerima nol sebagai belum ditetapkan dan memvalidasi tahun serta r
   assert.equal(validateTargets(year, { Tabungan: 0, Giro: 100, Deposito: 0 }), '')
   assert.ok(validateTargets(1999, { Tabungan: 1, Giro: 1, Deposito: 1 }))
   assert.ok(validateTargets(year, { Tabungan: -1, Giro: 1, Deposito: 1 }))
+})
+test('batas teks sesuai API, termasuk data panjang dari import dan karakter Unicode', () => {
+  for (const character of ['a', '😀']) {
+    const maximum = {
+      ...row,
+      customer: character.repeat(160),
+      notes: character.repeat(5000),
+      lostReason: character.repeat(2000),
+      outcome: 'Lost',
+      closedDate: today,
+    }
+    assert.equal(validatePipeline(maximum), '')
+    for (const key of ['customer', 'notes', 'lostReason']) {
+      const errors = pipelineFieldErrors({ ...maximum, [key]: maximum[key] + character })
+      assert.deepEqual(Object.keys(errors), [key])
+    }
+  }
 })
 test('migrasi menjaga nominal, PIC, catatan, follow-up selesai, dan segmentasi lama', () => {
   const legacy = {

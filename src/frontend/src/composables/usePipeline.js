@@ -309,7 +309,7 @@ export function usePipeline() {
           closed_date: row.closedDate,
           lost_reason: row.outcome === 'Lost' ? row.lostReason?.trim() : null,
           notes: row.notes?.trim() || null,
-          version: previous.version,
+          version: row.version,
         }),
       })
     } else {
@@ -325,8 +325,8 @@ export function usePipeline() {
         follow_up_date: row.followUpDate || null,
         notes: row.notes?.trim() || null,
       }
-      if (previous) payload.version = previous.version
-      // version mencegah isian lama menimpa perubahan pengguna lain (konflik HTTP 409).
+      if (previous) payload.version = row.version
+      // Gunakan versi salinan form saat dibuka, meskipun state bersama sudah diperbarui.
       saved = await api(previous ? `/opportunities/${previous.id}` : '/opportunities', {
         method: previous ? 'PATCH' : 'POST',
         requestKey,

@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Route;
 // Login tersedia tanpa token dan dibatasi 10 percobaan per menit.
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
-// Alur API terproteksi: Sanctum memeriksa token -> IdempotentWrite menangani retry
+// Alur API terproteksi: Sanctum memeriksa token -> periksa akun aktif -> IdempotentWrite menangani retry
 // aksi tulis -> controller memvalidasi akses/aturan bisnis -> model/database.
-Route::middleware(['auth:sanctum', \App\Http\Middleware\IdempotentWrite::class])->group(function () {
+Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureActiveUser::class, \App\Http\Middleware\IdempotentWrite::class])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/divisions', [LookupController::class, 'divisions']);

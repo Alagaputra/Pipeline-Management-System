@@ -309,7 +309,6 @@ async function reloadConflict() {
             >Nama nasabah<input
               v-model="form.customer"
               required
-              maxlength="120"
               placeholder="Contoh: PT Metland"
               v-bind="fieldAttrs('customer')"
             /><small v-if="fieldErrors.customer" :id="'error-customer'" class="field-error">{{
@@ -434,7 +433,6 @@ async function reloadConflict() {
                 v-model="form.lostReason"
                 required
                 rows="2"
-                maxlength="1000"
                 placeholder="Contoh: Nasabah menunda penempatan dana."
                 v-bind="fieldAttrs('lostReason')"
               ></textarea
@@ -447,7 +445,6 @@ async function reloadConflict() {
             >Catatan tindak lanjut<textarea
               v-model="form.notes"
               rows="4"
-              maxlength="2000"
               placeholder="Tuliskan hasil komunikasi dan langkah berikutnya..."
               v-bind="fieldAttrs('notes')"
             ></textarea>

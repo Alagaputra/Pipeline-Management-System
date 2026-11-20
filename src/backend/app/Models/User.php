@@ -52,6 +52,15 @@ class User extends Authenticatable
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::updated(function (User $user) {
+            if ($user->wasChanged('is_active') && !$user->is_active) {
+                $user->tokens()->delete();
+            }
+        });
+    }
+
     public function division()
     {
         return $this->belongsTo(Division::class);
