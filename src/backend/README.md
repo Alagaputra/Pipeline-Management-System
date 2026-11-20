@@ -27,7 +27,7 @@ Windows: `php.cmd` mengaktifkan `pdo_pgsql` melalui `php-conf.d/postgresql.ini` 
 
 API: http://127.0.0.1:8000/api. Pada `APP_ENV=local` atau `testing`, seeder membuat akun `suci`, `cacan`, `dharma`, `nisa`, dan `head` dengan password `demo123` jika belum ada. Seed ulang tidak mengubah akun yang sudah ada. Di produksi atau lingkungan lain, seeder hanya menyiapkan master data tanpa membuat akun demo; sediakan akun produksi secara terpisah. Akun demo lama tidak dihapus otomatis, sehingga kredensialnya perlu diganti atau akunnya dinonaktifkan sebelum penggunaan publik.
 
-Autentikasi memakai bearer token Laravel Sanctum dengan masa berlaku 480 menit (8 jam). Atur `SANCTUM_EXPIRATION` untuk mengubah batas umur (minimal 1 menit); token lama tanpa `expires_at` juga mengikuti batas ini. Setiap request terproteksi memeriksa akun aktif sebelum controller dan replay idempotensi. Penonaktifan melalui model `User` mencabut seluruh token; perubahan langsung di database ditolak dan token dicabut pada akses API berikutnya. Login ulang mencabut seluruh token lama dan logout mencabut token saat ini.
+Autentikasi memakai bearer token Laravel Sanctum dengan masa berlaku 480 menit (8 jam). Atur `SANCTUM_EXPIRATION` untuk mengubah batas umur (minimal 1 menit); token lama tanpa `expires_at` juga mengikuti batas ini. Setiap request terproteksi memeriksa akun aktif serta peran/divisi valid sebelum controller dan replay idempotensi. PIC harus memiliki divisi valid; peran yang diizinkan adalah `pic` dan `head`. Penonaktifan atau perubahan peran/divisi melalui model `User` mencabut seluruh token. Penonaktifan atau akses tidak valid yang diatur lewat query database langsung ditolak dan token dicabut pada akses API berikutnya. Login ulang mencabut seluruh token lama dan logout mencabut token saat ini.
 
 Sesudah deployment perubahan konfigurasi, bangun ulang cache konfigurasi (`php.cmd artisan config:cache`) jika server menggunakannya. Perubahan ini tidak memerlukan seed ulang dan tidak mengubah kredensial akun yang sudah ada.
 
@@ -37,11 +37,13 @@ Sesudah deployment perubahan konfigurasi, bangun ulang cache konfigurasi (`php.c
 
 `GET /api/opportunities/{id}` menyertakan `timeline` audit dengan pelaku dan perubahan. Target tahunan dapat disimpan tanpa mengirim target bulanan; data bulanan lama tetap dipertahankan.
 
+`GET /api/pics/{id}/opportunities` membatasi peluang dan riwayat penugasan pada divisi pengguna yang membaca. Memindahkan PIC ke divisi lain tidak membuka akses ke peluang divisi lamanya. Head tetap dapat membaca lintas divisi.
+
 `POST /api/targets/batch` menerima `{scope, year, targets: [{product, target_value, version, monthly?}]}`. Untuk layanan, `monthly` berisi 12 objek `{month, target_value, units, version}`. Semua perubahan target, realisasi, dan audit berada dalam satu transaksi; konflik versi menghasilkan 409 tanpa perubahan sebagian.
 
-`POST /api/opportunities/{id}/closing` menerima catatan opsional bersama hasil closing dan realisasi. Realisasi Won harus berupa rupiah bulat lebih dari nol dan boleh melebihi nominal potensi. Contoh: potensi Rp1 miliar dapat ditutup dengan realisasi Rp1,2 miliar; nominal potensi tetap Rp1 miliar, sedangkan laporan menghitung realisasi Rp1,2 miliar. Setiap permintaan tulis dapat memakai UUID pada header `Idempotency-Key`. Server menyimpan hasil sukses pada `request_receipts` di transaksi yang sama. Pengulangan pengguna/key/payload yang identik mengembalikan hasil tersebut; penggunaan key yang sama untuk payload lain ditolak 409. Header ini tidak diwajibkan untuk klien versi lama, tetapi selalu dikirim pada penyimpanan dari antarmuka terbaru.
+`POST /api/opportunities/{id}/closing` menerima catatan opsional bersama hasil closing dan realisasi. Realisasi Won harus berupa rupiah bulat lebih dari nol dan boleh melebihi nominal potensi. Contoh: potensi Rp1 miliar dapat ditutup dengan realisasi Rp1,2 miliar; nominal potensi tetap Rp1 miliar, sedangkan laporan menghitung realisasi Rp1,2 miliar. Setiap permintaan tulis dapat memakai UUID pada header `Idempotency-Key`. Server menyimpan hasil sukses pada `request_receipts` di transaksi yang sama. Replay memerlukan pengguna, key, metode, URI beserta query, payload, dan konteks peran/divisi yang sama. Ketidaksesuaian menghasilkan 409. Header ini tidak diwajibkan untuk klien versi lama, tetapi selalu dikirim pada penyimpanan dari antarmuka terbaru.
 
-Jalankan `php.cmd artisan migrate --force` saat memperbarui instalasi yang sudah ada; migration menambahkan tabel pencatatan permintaan. Tidak diperlukan pengosongan database. Contoh konfigurasi server publik ada di `.env.production.example`; `.env` lokal tetap dipakai untuk pengembangan.
+Nama nasabah maksimal 160 karakter, catatan 5.000 karakter, dan alasan Lost 2.000 karakter. Produk unit nonaktif tidak menerima penulisan realisasi melalui endpoint `PUT /api/unit-realizations/{scope}/{product}/{year}/{month}`. Lihat langkah migration pada [memperbarui instalasi](#memperbarui-instalasi). Contoh konfigurasi server publik ada di `.env.production.example`; `.env` lokal tetap dipakai untuk pengembangan.
 
 ## Menyalin data MySQL lama
 
@@ -52,6 +54,33 @@ Jalankan migration PostgreSQL tanpa seed terlebih dahulu. Database tujuan harus 
 ```
 
 Sumber MySQL tetap utuh. Jika sumber memakai password, gunakan variabel lingkungan `LEGACY_MYSQL_PASSWORD`. Token dan sesi lama tidak disalin; login kembali setelah perpindahan.
+
+## Memperbarui instalasi
+
+Jalankan dari direktori `src/backend` sebelum membuka kembali akses aplikasi:
+
+```powershell
+composer install --no-dev --optimize-autoloader
+.\php.cmd artisan migrate --force
+```
+
+Migration `2026_11_20_000001_add_authorization_context_to_request_receipts`
+menambahkan `authorization_context` pada `request_receipts` tanpa menghapus data.
+Tidak diperlukan seed ulang atau pengosongan database. Jika memakai cache
+konfigurasi, bangun ulang dengan `.\php.cmd artisan config:cache`. Build dan
+pemasangan frontend dijelaskan pada [README utama](../../README.md#memperbarui-instalasi).
+
+Receipt lama tanpa konteks, atau receipt dari peran/divisi yang sudah berubah,
+menghasilkan 409. Periksa data terbaru sebelum menyimpan kembali; jangan otomatis
+mengganti request key untuk operasi yang hasilnya belum pasti. Perubahan peran atau
+divisi melalui model `User` mencabut token, sehingga pengguna harus login kembali.
+Akun PIC tanpa divisi valid atau dengan peran tidak dikenal ditolak dengan 401.
+
+Riwayat PIC mengikuti divisi pemanggil saat ini. Produk unit nonaktif menolak
+penulisan realisasi. API membatasi nominal, realisasi, target, dan unit maksimal
+9.007.199.254.740.991 agar sesuai integer aman frontend; input yang lebih besar
+ditolak 422 dan data lama tidak diubah otomatis. Form target memakai versi saat
+dibuka; pilih tahun melalui filter halaman sebelum membuka formulir.
 
 ## Pengujian
 
@@ -65,3 +94,8 @@ Remove-Item Env:DB_DATABASE
 ```
 
 Gunakan hanya database pengujian: suite mengelola ulang skema dan fixture.
+
+Tes regresi `AccessBoundaryTest` mencakup riwayat PIC setelah pindah divisi,
+akun tanpa divisi/peran valid, pencabutan token saat perubahan akses, penolakan
+receipt lama atau konteks berbeda, produk unit nonaktif, serta batas angka.
+Hasil verifikasi terakhir tersedia pada [README utama](../../README.md#build-dan-pengujian).

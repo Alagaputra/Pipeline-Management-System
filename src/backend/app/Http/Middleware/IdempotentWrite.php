@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -17,14 +18,22 @@ class IdempotentWrite
         if ($request->isMethodSafe() || !$key) return $next($request);
         abort_unless(Str::isUuid($key), 422, 'Identitas penyimpanan tidak valid.');
         $userId = $request->user()->id;
-        $hash = hash('sha256', $request->method().' '.$request->path().' '.$request->getContent());
+        $hash = hash('sha256', $request->method().' '.$request->getRequestUri().' '.$request->getContent());
         // Hash mengikat key ke method, endpoint, dan isi permintaan yang persis sama.
 
         return DB::transaction(function () use ($request, $next, $key, $userId, $hash) {
             // Kunci akun agar dua request bersamaan tidak sama-sama menganggap key baru.
-            DB::table('users')->where('id', $userId)->lockForUpdate()->first();
+            $user = User::whereKey($userId)->lockForUpdate()->firstOrFail();
+            if (!$user->is_active || !$user->hasValidAccess()) {
+                $user->tokens()->delete();
+                return response()->json(['message' => 'Akses akun tidak valid.'], 401);
+            }
+            $authorizationContext = $user->authorizationContext();
+            $user->withAccessToken($request->user()->currentAccessToken());
+            $request->setUserResolver(fn () => $user);
             $receipt = DB::table('request_receipts')->where('user_id', $userId)->where('request_key', $key)->first();
             if ($receipt) {
+                abort_unless($receipt->authorization_context && hash_equals($receipt->authorization_context, $authorizationContext), 409, 'Hak akses berubah atau hasil lama perlu diperiksa. Muat data terbaru sebelum menyimpan.');
                 abort_unless(hash_equals($receipt->request_hash, $hash), 409, 'Permintaan sebelumnya sudah tersimpan. Muat data terbaru.');
                 return response($receipt->response_body, $receipt->status_code)
                     ->header('Content-Type', 'application/json')->header('Idempotency-Replayed', 'true');
@@ -34,7 +43,7 @@ class IdempotentWrite
             // dengan perubahan bisnis sehingga data dan hasil retry tetap konsisten.
             if ($response->isSuccessful()) {
                 DB::table('request_receipts')->insert([
-                    'user_id' => $userId, 'request_key' => $key, 'request_hash' => $hash,
+                    'user_id' => $userId, 'request_key' => $key, 'request_hash' => $hash, 'authorization_context' => $authorizationContext,
                     'status_code' => $response->getStatusCode(), 'response_body' => $response->getContent(),
                     'created_at' => now(),
                 ]);

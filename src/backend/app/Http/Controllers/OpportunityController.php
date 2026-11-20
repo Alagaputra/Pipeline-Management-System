@@ -72,7 +72,7 @@ class OpportunityController extends Controller
         // dengan versi terkini agar perubahan pengguna lain tidak tertimpa.
         $opportunity = $this->visibleOpportunity($request, $id);
         abort_if($opportunity->outcome !== 'Active', 409, 'Opportunity sudah closing.');
-        $request->validate(['version' => ['required', 'integer', 'min:1']]);
+        $request->validate(['version' => ['required', 'integer', 'min:1', 'max:9007199254740991']]);
         abort_if((int) $request->version !== (int) $opportunity->version, 409, 'Data telah berubah. Muat ulang sebelum menyimpan.');
         $divisionId = $this->divisionId($request, $opportunity->division_id);
         $data = $this->validated($request, $divisionId, $opportunity->segment === 'Small');
@@ -102,7 +102,7 @@ class OpportunityController extends Controller
         // Penyelesaian tugas tidak menutup peluang; cukup ubah penanda dan naikkan version.
         return DB::transaction(function () use ($request, $id) {
             $opportunity = $this->visibleOpportunity($request, $id, true);
-            $data = $request->validate(['version' => ['required', 'integer', 'min:1']]);
+            $data = $request->validate(['version' => ['required', 'integer', 'min:1', 'max:9007199254740991']]);
             abort_if($opportunity->outcome !== 'Active' || !$opportunity->follow_up_date || $opportunity->follow_up_completed, 409, 'Follow-up tidak dapat diselesaikan.');
             abort_if($data['version'] !== $opportunity->version, 409, 'Data telah berubah. Muat ulang.');
             $before = $opportunity->toArray();
@@ -121,10 +121,10 @@ class OpportunityController extends Controller
             abort_if($opportunity->outcome !== 'Active', 409, 'Opportunity sudah closing.');
             $data = $request->validate([
                 'outcome' => ['required', Rule::in(['Won', 'Lost'])],
-                'realization' => ['nullable', 'integer', 'min:0'],
+                'realization' => ['nullable', 'integer', 'min:0', 'max:9007199254740991'],
                 'closed_date' => ['required', 'date', 'after_or_equal:'.$opportunity->recorded_date->format('Y-m-d'), 'before_or_equal:today'],
                 'lost_reason' => ['nullable', 'string', 'max:2000'],
-                'version' => ['required', 'integer', 'min:1'],
+                'version' => ['required', 'integer', 'min:1', 'max:9007199254740991'],
                 'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
             ]);
             abort_if($data['version'] !== $opportunity->version, 409, 'Data telah berubah. Muat ulang.');
@@ -150,7 +150,7 @@ class OpportunityController extends Controller
         $data = $request->validate([
             'pic_id' => ['required', 'integer'], 'product_id' => ['required', 'integer'],
             'customer_name' => ['required', 'string', 'max:160'], 'segment' => ['required', Rule::in($legacySmall ? ['Small', 'Mid', 'Large'] : ['Mid', 'Large'])],
-            'nominal' => ['required', 'integer', 'min:1'], 'interest_status' => ['required', Rule::in(['Cold', 'Warm', 'Hot'])],
+            'nominal' => ['required', 'integer', 'min:1', 'max:9007199254740991'], 'interest_status' => ['required', Rule::in(['Cold', 'Warm', 'Hot'])],
             'recorded_date' => ['required', 'date', 'before_or_equal:today'], 'follow_up_date' => ['nullable', 'date', 'after_or_equal:recorded_date'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);

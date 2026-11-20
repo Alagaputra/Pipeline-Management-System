@@ -55,7 +55,7 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::updated(function (User $user) {
-            if ($user->wasChanged('is_active') && !$user->is_active) {
+            if (($user->wasChanged('is_active') && !$user->is_active) || $user->wasChanged(['role', 'division_id'])) {
                 $user->tokens()->delete();
             }
         });
@@ -74,5 +74,15 @@ class User extends Authenticatable
     public function isHead(): bool
     {
         return $this->role === 'head';
+    }
+
+    public function hasValidAccess(): bool
+    {
+        return $this->isHead() || ($this->role === 'pic' && $this->division()->exists());
+    }
+
+    public function authorizationContext(): string
+    {
+        return hash('sha256', json_encode([$this->role, $this->division_id]));
     }
 }

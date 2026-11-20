@@ -18,6 +18,9 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['username' => ['Username atau password tidak sesuai.']]);
         }
         $user->tokens()->delete();
+        if (!$user->hasValidAccess()) {
+            return response()->json(['message' => 'Akses akun belum valid. Silakan hubungi administrator.'], 401);
+        }
         // Login baru mencabut seluruh token lama milik akun ini.
         $expiresAt = now()->addMinutes(config('sanctum.expiration'));
         return response()->json([

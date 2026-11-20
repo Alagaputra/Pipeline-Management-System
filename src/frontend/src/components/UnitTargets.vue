@@ -17,6 +17,7 @@ const {
   isHead,
   getUnitTarget,
   saveUnitTarget,
+  captureTargetDraft,
   refresh,
   storageError,
   loading,
@@ -66,12 +67,14 @@ const conflict = ref(false)
 const requestKey = ref(crypto.randomUUID())
 const draft = reactive({ target: 0, monthly: {} })
 let baseline = ''
+let targetDraft
 useUnsavedChanges(
   computed(() => Boolean(editing.value) && (uncertain.value || JSON.stringify(draft) !== baseline)),
   saving,
 )
 function edit(product) {
   if (loading.value) return
+  targetDraft = captureTargetDraft()
   requestKey.value = crypto.randomUUID()
   uncertain.value = false
   conflict.value = false
@@ -127,7 +130,10 @@ async function save() {
           (key) => entry.monthly[m][key] !== (previous.monthly[m]?.[key] || 0),
         ),
       )
-    await saveUnitTarget(editing.value, selectedYear.value, entry, { requestKey: requestKey.value })
+    await saveUnitTarget(editing.value, selectedYear.value, entry, {
+      requestKey: requestKey.value,
+      draft: targetDraft,
+    })
     if (changed.length && !changed.includes(month.value)) month.value = changed[0]
     success.value = editing.value + ' tahun ' + selectedYear.value + ' berhasil disimpan.'
     editing.value = ''

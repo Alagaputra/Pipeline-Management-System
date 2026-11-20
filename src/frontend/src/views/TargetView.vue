@@ -17,6 +17,7 @@ const {
   annualTargets,
   selectedYear,
   saveTargets,
+  captureTargetDraft,
   products,
   canEdit,
   loading,
@@ -38,11 +39,13 @@ const success = ref('')
 const draft = reactive({ year: selectedYear.value, Tabungan: 0, Giro: 0, Deposito: 0 })
 // Draft terpisah dari target tersimpan; baseline dipakai untuk mendeteksi perubahan.
 let baseline = ''
+let targetDraft
 useUnsavedChanges(
   computed(() => editing.value && (uncertain.value || JSON.stringify(draft) !== baseline)),
   saving,
 )
 function edit() {
+  targetDraft = captureTargetDraft()
   requestKey.value = crypto.randomUUID()
   uncertain.value = false
   conflict.value = false
@@ -132,7 +135,10 @@ async function save() {
   if (error.value || saving.value) return
   saving.value = true
   try {
-    await saveTargets(Number(draft.year), values, { requestKey: requestKey.value })
+    await saveTargets(Number(draft.year), values, {
+      requestKey: requestKey.value,
+      draft: targetDraft,
+    })
     editing.value = false
     success.value = 'Target tahun ' + draft.year + ' berhasil disimpan.'
   } catch (e) {
@@ -195,6 +201,7 @@ async function save() {
             >Tahun<input
               v-model="draft.year"
               name="year"
+              readonly
               :aria-invalid="Boolean(fieldErrors.year)"
               :aria-describedby="fieldErrors.year ? 'target-error-year' : undefined"
               type="number"

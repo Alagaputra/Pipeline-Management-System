@@ -37,13 +37,13 @@ class TargetController extends Controller
             'scope' => ['required', 'string'], 'year' => ['required', 'integer', 'between:2000,2100'],
             'targets' => ['required', 'array', 'min:1', 'max:10'],
             'targets.*.product' => ['required', 'string', 'distinct'],
-            'targets.*.target_value' => ['required', 'integer', 'min:0'],
-            'targets.*.version' => ['required', 'integer', 'min:0'],
+            'targets.*.target_value' => ['required', 'integer', 'min:0', 'max:9007199254740991'],
+            'targets.*.version' => ['required', 'integer', 'min:0', 'max:9007199254740991'],
             'targets.*.monthly' => ['sometimes', 'array', 'size:12'],
             'targets.*.monthly.*.month' => ['required', 'integer', 'between:1,12'],
-            'targets.*.monthly.*.target_value' => ['required', 'integer', 'min:0'],
-            'targets.*.monthly.*.units' => ['sometimes', 'integer', 'min:0'],
-            'targets.*.monthly.*.version' => ['sometimes', 'integer', 'min:0'],
+            'targets.*.monthly.*.target_value' => ['required', 'integer', 'min:0', 'max:9007199254740991'],
+            'targets.*.monthly.*.units' => ['sometimes', 'integer', 'min:0', 'max:9007199254740991'],
+            'targets.*.monthly.*.version' => ['sometimes', 'integer', 'min:0', 'max:9007199254740991'],
         ]);
         $entries = collect($data['targets'])->sortBy('product')->map(function ($entry) use ($request, $data) {
             $product = Product::where('code', $entry['product'])->where('is_active', true)->firstOrFail();
@@ -97,9 +97,9 @@ class TargetController extends Controller
         $this->authorizeWrite($request, $scope, $productModel);
         abort_unless($year >= 2000 && $year <= 2100, 422, 'Tahun tidak valid.');
         $data = $request->validate([
-            'target_value' => ['required', 'integer', 'min:0'], 'version' => ['required', 'integer', 'min:0'],
+            'target_value' => ['required', 'integer', 'min:0', 'max:9007199254740991'], 'version' => ['required', 'integer', 'min:0', 'max:9007199254740991'],
             'monthly' => ['sometimes', 'array', 'size:12'], 'monthly.*.month' => ['required', 'integer', 'between:1,12', 'distinct'],
-            'monthly.*.target_value' => ['required', 'integer', 'min:0'],
+            'monthly.*.target_value' => ['required', 'integer', 'min:0', 'max:9007199254740991'],
         ]);
         return DB::transaction(function () use ($request, $scope, $productModel, $year, $data) {
             TargetScope::whereKey($scope)->lockForUpdate()->firstOrFail();
@@ -119,10 +119,10 @@ class TargetController extends Controller
     public function realize(Request $request, string $scope, string $product, int $year, int $month)
     {
         // Realisasi manual hanya untuk produk UNIT; realisasi rupiah berasal dari closing Won.
-        $productModel = Product::where('code', $product)->where('measure', 'UNIT')->firstOrFail();
+        $productModel = Product::where('code', $product)->where('measure', 'UNIT')->where('is_active', true)->firstOrFail();
         $this->authorizeWrite($request, $scope, $productModel);
         abort_unless($year >= 2000 && $year <= 2100 && $month >= 1 && $month <= 12, 422, 'Tahun atau bulan tidak valid.');
-        $data = $request->validate(['units' => ['required', 'integer', 'min:0'], 'version' => ['required', 'integer', 'min:0']]);
+        $data = $request->validate(['units' => ['required', 'integer', 'min:0', 'max:9007199254740991'], 'version' => ['required', 'integer', 'min:0', 'max:9007199254740991']]);
         return DB::transaction(function () use ($request, $scope, $productModel, $year, $month, $data) {
             TargetScope::whereKey($scope)->lockForUpdate()->firstOrFail();
             $target = AnnualTarget::firstOrCreate(['scope_code' => $scope, 'product_id' => $productModel->id, 'year' => $year], ['target_value' => 0, 'updated_by' => $request->user()->id]);
@@ -152,7 +152,7 @@ class TargetController extends Controller
         $divisionModel = Division::where('code', $division)->firstOrFail();
         abort_unless($request->user()->isHead() || $request->user()->division_id === $divisionModel->id, 403);
         abort_unless($year >= 2000 && $year <= 2100, 422, 'Tahun tidak valid.');
-        $data = $request->validate(['target_value' => ['required', 'integer', 'min:0'], 'version' => ['required', 'integer', 'min:0']]);
+        $data = $request->validate(['target_value' => ['required', 'integer', 'min:0', 'max:9007199254740991'], 'version' => ['required', 'integer', 'min:0', 'max:9007199254740991']]);
         return DB::transaction(function () use ($request, $divisionModel, $branch, $year, $data) {
             Division::whereKey($divisionModel->id)->lockForUpdate()->firstOrFail();
             $target = BranchTarget::where(['division_id' => $divisionModel->id, 'branch_code' => strtolower($branch), 'year' => $year])->lockForUpdate()->first();

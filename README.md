@@ -21,6 +21,7 @@ migration yang tersedia di repositori.
 - [Ringkasan REST API](#ringkasan-rest-api)
 - [Struktur proyek](#struktur-proyek)
 - [Menjalankan secara lokal](#menjalankan-secara-lokal)
+- [Memperbarui instalasi](#memperbarui-instalasi)
 - [Build dan pengujian](#build-dan-pengujian)
 - [Berkas lokal dan dokumentasi lanjutan](#berkas-lokal-dan-dokumentasi-lanjutan)
 
@@ -41,8 +42,10 @@ flowchart LR
     Vue --> State[useSession dan usePipeline]
     State --> Client[API client: token dan Idempotency-Key]
     Client --> API[Laravel REST API]
-    API --> Auth[Sanctum dan middleware IdempotentWrite]
-    Auth --> Business[Controller: otorisasi dan aturan bisnis]
+    API --> Auth[Sanctum: token valid]
+    Auth --> Access[Akun aktif dan peran/divisi valid]
+    Access --> Retry[IdempotentWrite: periksa konteks akses dan retry]
+    Retry --> Business[Controller: otorisasi dan aturan bisnis]
     Business --> DB[(PostgreSQL)]
     Business --> Report[DashboardReport]
     Report --> DB
@@ -66,6 +69,10 @@ peluang dan master PIC yang telah dimuat.
 Pembatasan divisi ditegakkan di backend. Pada tampilan **Semua Divisi**, Head
 mendapat ringkasan gabungan; pengeditan peluang dan target divisi memerlukan
 pemilihan satu divisi. CMS tetap menggunakan satu target bersama.
+
+PIC harus memiliki divisi valid; akun dengan peran selain `pic` atau `head`
+ditolak saat login dan mengakses API. Riwayat penugasan PIC tetap mengikuti
+divisi pengguna yang membaca, termasuk setelah PIC dipindahkan ke divisi lain.
 
 ## Produk dan cakupan target
 
@@ -96,6 +103,9 @@ divisi, sehingga tidak menjadi dua target terpisah.
 - Router melindungi halaman internal. Respons `401` membersihkan sesi frontend
   dan mengarahkan pengguna ke halaman login.
 - Logout mencabut token yang sedang dipakai dan membersihkan sesi browser.
+- Token berlaku 480 menit (8 jam) secara default melalui `SANCTUM_EXPIRATION`.
+  Penonaktifan atau perubahan peran/divisi melalui model `User` mencabut token;
+  pengguna perlu login kembali setelah perubahan akses.
 
 ### 2. Dashboard (`/#/`)
 
@@ -141,6 +151,9 @@ divisi, sehingga tidak menjadi dua target terpisah.
 ### 5. Target dana dan layanan (`/#/target`)
 
 - Menetapkan target tahunan dana per produk dan divisi, dengan pilihan tahun.
+- Pilih tahun melalui filter halaman sebelum membuka formulir; tahun di dalam
+  form target dana hanya untuk dibaca. Perubahan konteks divisi/tahun saat form
+  terbuka mengharuskan pemuatan ulang sebelum menyimpan.
 - Menyimpan beberapa target produk sekaligus melalui satu batch transaksi.
 - Menampilkan total target, realisasi Won, persentase pencapaian, dan sisa target.
 - Mengelola target tahunan layanan serta target dan realisasi unit untuk 12 bulan.
@@ -175,11 +188,17 @@ divisi, sehingga tidak menjadi dua target terpisah.
 - Tombol dan formulir dilindungi selama proses simpan untuk mengurangi kiriman ganda.
 - Field `version` mencegah isian lama menimpa perubahan pengguna lain. Konflik
   menghasilkan `409` dan antarmuka menyediakan pemuatan data terbaru.
+- Versi peluang, target dana, target layanan, dan realisasi bulanan disalin saat
+  form dibuka. Pembaruan state selama form terbuka tidak mengganti versi draft.
 - Transaksi database menjaga perubahan peluang/penugasan/audit serta batch
   target/realisasi tetap konsisten jika salah satu langkah gagal.
 - `Idempotency-Key` memungkinkan retry permintaan tulis tanpa menggandakan hasil.
   Jika jaringan putus atau timeout, klien mempertahankan key dan payload asli
   selama hasil penyimpanan belum pasti.
+- Replay memerlukan pengguna, metode, URI beserta query, payload, dan konteks
+  peran/divisi yang sama. Receipt lama tanpa konteks otorisasi atau dari konteks
+  akses berbeda ditolak `409` tanpa menjalankan ulang operasi. Periksa data
+  terbaru sebelum membuat permintaan baru.
 - Respons dari konteks akun, divisi, atau tahun yang sudah berubah diabaikan agar
   data lama tidak menimpa tampilan terbaru.
 
@@ -206,6 +225,14 @@ divisi, sehingga tidak menjadi dua target terpisah.
 Contoh: peluang Tabungan berpotensi Rp1 miliar dapat ditutup Won dengan
 realisasi Rp1,2 miliar. Laporan menghitung Rp1,2 miliar sebagai realisasi pada
 tahun closing, sementara nominal potensi tetap Rp1 miliar.
+
+Nama nasabah dibatasi 160 karakter, catatan 5.000 karakter, dan alasan Lost
+2.000 karakter pada frontend maupun API, termasuk penghitungan karakter Unicode.
+Nominal, realisasi, target, dan unit yang dikirim ke API maksimal
+**9.007.199.254.740.991** agar dapat direpresentasikan sebagai integer aman di
+frontend; nilai yang melebihi batas ditolak `422`. Data lama tidak dipotong atau
+diubah otomatis. Produk nonaktif tidak menerima penulisan target maupun
+realisasi unit baru.
 
 ## ERD database
 
@@ -391,6 +418,7 @@ erDiagram
         bigint user_id FK
         uuid request_key
         varchar request_hash
+        varchar authorization_context "nullable untuk receipt lama"
         smallint status_code
         text response_body
         timestamp created_at
@@ -633,7 +661,7 @@ Pipeline Management system/
     │   └── vite.config.js        # Dev server dan proxy API
     └── backend/
         ├── app/Http/Controllers/ # API dan aturan bisnis
-        ├── app/Http/Middleware/  # IdempotentWrite
+        ├── app/Http/Middleware/  # Pemeriksaan akun aktif/akses dan idempotensi
         ├── app/Models/           # Model dan relasi Eloquent
         ├── app/Services/         # DashboardReport
         ├── app/Support/          # Penulisan audit
@@ -741,9 +769,39 @@ Token API berlaku 480 menit (8 jam), dapat diatur melalui `SANCTUM_EXPIRATION`
 dengan nilai minimal 1 menit. Batas umur ini juga berlaku pada token lama tanpa
 `expires_at`. Login ulang mencabut token sebelumnya; logout mencabut token yang
 dipakai. Setiap request terproteksi memeriksa status aktif sebelum memproses
-permintaan atau mengembalikan hasil retry. Penonaktifan melalui model `User`
-langsung mencabut semua token; perubahan langsung di database juga ditolak
-dan token dicabut ketika akun berikutnya mengakses API.
+permintaan atau mengembalikan hasil retry. Penonaktifan atau perubahan peran/divisi
+melalui model `User` langsung mencabut semua token. Penonaktifan dan konfigurasi
+akses yang tidak valid melalui query database langsung juga ditolak dan token
+dicabut ketika akun berikutnya mengakses API.
+
+## Memperbarui instalasi
+
+Setelah memperbarui sumber aplikasi, pasang dependensi sesuai lockfile dan
+bangun frontend dari direktori utama:
+
+```powershell
+npm.cmd --prefix src/frontend ci
+npm.cmd run build
+```
+
+Kemudian, dari `src/backend`, sebelum membuka kembali akses aplikasi:
+
+```powershell
+composer install --no-dev --optimize-autoloader
+.\php.cmd artisan migrate --force
+```
+
+Migration `2026_11_20_000001_add_authorization_context_to_request_receipts`
+menambahkan kolom `authorization_context` tanpa menghapus data. Jika server
+menggunakan cache konfigurasi, bangun ulang dengan
+`.\php.cmd artisan config:cache`. Seed ulang tidak diperlukan.
+
+Receipt dari versi lama tetap tersimpan, tetapi replay tanpa konteks otorisasi
+ditolak `409`. Periksa hasil operasi pada data terbaru sebelum menyimpan kembali;
+jangan otomatis mengganti key dan mengulang operasi yang hasilnya belum pasti.
+Pengguna yang tokennya dicabut karena perubahan akses harus login kembali.
+
+Detail backend tersedia pada [panduan backend](src/backend/README.md).
 
 ## Build dan pengujian
 
@@ -773,6 +831,22 @@ Secara default, PHPUnit menggunakan SQLite in-memory; ekstensi `pdo_sqlite`
 diperlukan untuk mode ini. Suite API mencakup batas akses divisi, validasi
 produk/PIC, closing dan realisasi, laporan, follow-up, audit, konflik versi,
 batch transaksi, serta idempotensi.
+
+Hasil verifikasi perubahan keamanan pada **20 November 2026**:
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| Tes frontend | 19 lulus, termasuk draft target lama dan perubahan konteks |
+| Tes backend | 40 lulus, 288 assertion, memakai SQLite in-memory |
+| Build frontend | Berhasil |
+| `npm audit` pada root dan frontend | 0 advisory saat pemeriksaan |
+| `composer audit --locked` | 0 advisory saat pemeriksaan |
+| E2E browser dan server produksi | Belum diperiksa pada verifikasi ini |
+
+Tes regresi mencakup akses riwayat setelah PIC pindah divisi, akun tanpa divisi
+atau dengan peran tidak valid, token setelah perubahan akses, replay dengan
+konteks berbeda/receipt lama, produk nonaktif, dan batas angka. Hasil audit
+dependensi merupakan hasil pada waktu pemeriksaan, bukan jaminan bebas celah.
 
 Untuk pengujian browser, siapkan PostgreSQL **`pipeline_funding_test`** yang
 terpisah dari database aplikasi, lalu jalankan migration dan seed pada database

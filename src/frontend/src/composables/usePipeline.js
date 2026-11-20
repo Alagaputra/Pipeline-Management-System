@@ -283,6 +283,31 @@ function rememberTargets(saved, context) {
   applyTargets([...map.values()], [...branchRecords.value.values()], context)
 }
 export function usePipeline() {
+  function captureTargetDraft() {
+    return {
+      context: capture(),
+      versions: Object.fromEntries(
+        [...targetRecords.value].map(([key, record]) => [
+          key,
+          {
+            version: Number(record.version),
+            monthly: Object.fromEntries(
+              (record.unit_realizations || []).map((item) => [item.month, Number(item.version)]),
+            ),
+          },
+        ]),
+      ),
+    }
+  }
+  function requireTargetDraft(draft, year) {
+    if (!draft || !current(draft.context) || Number(year) !== draft.context.year) {
+      const error = new Error(
+        'Konteks divisi atau tahun berubah. Muat data terbaru sebelum menyimpan.',
+      )
+      error.status = 409
+      throw error
+    }
+  }
   // Komponen memanggil aksi di bawah; validasi awal dilakukan di sini dan
   // backend tetap memeriksa otorisasi, aturan bisnis, serta version data.
   async function save(row, { requestKey = crypto.randomUUID() } = {}) {
@@ -351,22 +376,17 @@ export function usePipeline() {
     rememberRow(saved, context)
     await afterWrite(context)
   }
-  async function saveTargets(year, values, { requestKey = crypto.randomUUID() } = {}) {
+  async function saveTargets(year, values, { requestKey = crypto.randomUUID(), draft } = {}) {
     // Kirim target produk dalam satu batch beserta version; 0 berarti record belum ada.
     requireDivision()
+    requireTargetDraft(draft, year)
     const error = validatePipelineTargets(year, values)
     if (error) throw new Error(error)
     const context = { ...capture(), year: Number(year) },
       scope = context.scope.toLowerCase()
-    const records =
-      context.year === Number(selectedYear.value)
-        ? [...targetRecords.value.values()]
-        : await api(`/targets?year=${context.year}&scope=${scope}`)
     const targets = products.value.map((name) => {
       const product = masterProducts.value.find((item) => item.name === name)
-      const record = records.find(
-        (item) => item.scope_code === scope && Number(item.product_id) === Number(product.id),
-      )
+      const record = draft.versions[`${scope}:${product.code}`]
       return {
         product: product.code,
         target_value: Number(values[name]),
@@ -387,19 +407,22 @@ export function usePipeline() {
   function getUnitTarget(product) {
     return unitState.value[product] || { target: 0, monthly: {} }
   }
-  async function saveUnitTarget(product, year, entry, { requestKey = crypto.randomUUID() } = {}) {
+  async function saveUnitTarget(
+    product,
+    year,
+    entry,
+    { requestKey = crypto.randomUUID(), draft } = {},
+  ) {
     // CMS memakai scope shared; layanan lainnya mengikuti divisi yang sedang dipilih.
     // Target tahunan dan 12 realisasi bulanan dikirim sebagai satu batch.
     if (!user.value || loading.value || (product !== 'CMS' && !canEdit.value))
       throw new Error('Tunggu data selesai dimuat dan pilih divisi.')
     validateUnitEntry(entry)
+    requireTargetDraft(draft, year)
     const context = capture(),
       productRecord = masterProducts.value.find((item) => item.name === product),
       scope = product === 'CMS' ? 'shared' : context.scope.toLowerCase()
-    const record = targetRecords.value.get(`${scope}:${productRecord.code}`)
-    const versions = new Map(
-      (record?.unit_realizations || []).map((item) => [item.month, Number(item.version)]),
-    )
+    const record = draft.versions[`${scope}:${productRecord.code}`]
     const saved = await api('/targets/batch', {
       method: 'POST',
       requestKey,
@@ -415,7 +438,7 @@ export function usePipeline() {
               month: i + 1,
               target_value: entry.monthly[i + 1]?.target || 0,
               units: entry.monthly[i + 1]?.realization || 0,
-              version: versions.get(i + 1) || 0,
+              version: record?.monthly[i + 1] || 0,
             })),
           },
         ],
@@ -451,6 +474,7 @@ export function usePipeline() {
     save,
     complete,
     saveTargets,
+    captureTargetDraft,
     division,
     divisionLabel,
     headDivision,

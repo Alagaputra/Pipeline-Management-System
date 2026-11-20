@@ -38,7 +38,9 @@ class ReportController extends Controller
         // Tampilkan juga peluang yang pernah ditangani PIC melalui riwayat penugasan.
         $pic = User::where('role', 'pic')->findOrFail($id);
         abort_unless($request->user()->isHead() || $request->user()->division_id === $pic->division_id, 404);
-        return Opportunity::with(['product', 'division'])->where(function ($q) use ($id) {
+        return Opportunity::with(['product', 'division'])
+            ->when(!$request->user()->isHead(), fn ($q) => $q->where('division_id', $request->user()->division_id))
+            ->where(function ($q) use ($id) {
             $q->where('pic_id', $id)->orWhereHas('assignments', fn ($a) => $a->where('pic_id', $id));
         })->latest('updated_at')->paginate(20);
     }
