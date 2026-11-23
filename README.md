@@ -780,45 +780,10 @@ dicabut ketika akun berikutnya mengakses API.
 
 ## Memperbarui instalasi
 
-Pembaruan keandalan terbaru menolak respons sukses dengan JSON atau bentuk data
-yang tidak valid, mempertahankan draft serta payload retry, dan mengabaikan
-respons dari sesi lama. Retry closing tetap mencapai receipt server meskipun
-refresh sudah menemukan hasil Won/Lost tersimpan.
-
-Total nominal, realisasi, target, dan unit dihitung secara eksak. Pada respons
-laporan, total sampai 9.007.199.254.740.991 tetap berupa JSON number; total yang
-lebih besar berupa string desimal, misalnya `"9007199254740993"`. Klien API harus
-mempertahankan string tersebut atau memakai aritmetika integer presisi penuh.
-Frontend menjaga nilai dan format rupiah/unit tetap eksak; skala grafik serta
-persentase menggunakan angka pecahan untuk visualisasi. Batas input per field
-tetap sama. Tidak ada migration tambahan untuk pembaruan keandalan ini.
-
-Setelah memperbarui sumber aplikasi, pasang dependensi sesuai lockfile dan
-bangun frontend dari direktori utama:
-
-```powershell
-npm.cmd --prefix src/frontend ci
-npm.cmd run build
-```
-
-Kemudian, dari `src/backend`, sebelum membuka kembali akses aplikasi:
-
-```powershell
-composer install --no-dev --optimize-autoloader
-.\php.cmd artisan migrate --force
-```
-
-Migration `2026_11_20_000001_add_authorization_context_to_request_receipts`
-menambahkan kolom `authorization_context` tanpa menghapus data. Jika server
-menggunakan cache konfigurasi, bangun ulang dengan
-`.\php.cmd artisan config:cache`. Seed ulang tidak diperlukan.
-
-Receipt dari versi lama tetap tersimpan, tetapi replay tanpa konteks otorisasi
-ditolak `409`. Periksa hasil operasi pada data terbaru sebelum menyimpan kembali;
-jangan otomatis mengganti key dan mengulang operasi yang hasilnya belum pasti.
-Pengguna yang tokennya dicabut karena perubahan akses harus login kembali.
-
-Detail backend tersedia pada [panduan backend](src/backend/README.md).
+Untuk instalasi yang sudah berjalan, pembaruan mencakup pemasangan dependensi,
+build frontend, dan migration database yang belum diterapkan. Ikuti
+[panduan pembaruan instalasi](src/backend/README.md#memperbarui-instalasi)
+untuk urutan perintah dan penanganan perubahan akses serta retry.
 
 ## Build dan pengujian
 

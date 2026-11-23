@@ -77,4 +77,4 @@ Hasil verifikasi dan batas pemeriksaan terakhir tersedia pada
 
 Saat memperbarui instalasi, jalankan `npm.cmd ci` dan `npm.cmd run build`.
 Pembaruan backend memerlukan migration konteks otorisasi sebelum aplikasi
-dibuka kembali; ikuti [panduan deployment](../../README.md#memperbarui-instalasi).
+dibuka kembali; ikuti [panduan pembaruan instalasi](../backend/README.md#memperbarui-instalasi).

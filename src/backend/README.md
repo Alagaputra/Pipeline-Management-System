@@ -74,6 +74,14 @@ produk/divisi yang sudah ada. Relasi bawaan hanya dibuat untuk divisi baru.
 Pembaruan perhitungan eksak memakai dependensi `brick/math` yang tercantum pada
 lockfile; tidak memerlukan migration tambahan di luar migration akses berikut.
 
+Setelah memperbarui sumber aplikasi, pasang dependensi sesuai lockfile dan
+bangun frontend dari direktori utama proyek:
+
+```powershell
+npm.cmd --prefix src/frontend ci
+npm.cmd run build
+```
+
 Jalankan dari direktori `src/backend` sebelum membuka kembali akses aplikasi:
 
 ```powershell
@@ -84,8 +92,14 @@ composer install --no-dev --optimize-autoloader
 Migration `2026_11_20_000001_add_authorization_context_to_request_receipts`
 menambahkan `authorization_context` pada `request_receipts` tanpa menghapus data.
 Tidak diperlukan seed ulang atau pengosongan database. Jika memakai cache
-konfigurasi, bangun ulang dengan `.\php.cmd artisan config:cache`. Build dan
-pemasangan frontend dijelaskan pada [README utama](../../README.md#memperbarui-instalasi).
+konfigurasi, bangun ulang dengan `.\php.cmd artisan config:cache`.
+
+Frontend yang diperbarui mempertahankan draft dan payload retry jika respons
+sukses berisi JSON atau bentuk data yang tidak valid. Respons sesi lama
+diabaikan; retry closing tetap mencapai receipt meskipun refresh sudah menemukan
+hasil Won/Lost tersimpan. Total besar dipertahankan secara eksak di frontend;
+angka pecahan hanya digunakan untuk skala grafik dan persentase. Klien API lain
+perlu mempertahankan string desimal laporan atau memakai integer presisi penuh.
 
 Receipt lama tanpa konteks, atau receipt dari peran/divisi yang sudah berubah,
 menghasilkan 409. Periksa data terbaru sebelum menyimpan kembali; jangan otomatis
