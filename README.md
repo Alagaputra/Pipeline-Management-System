@@ -23,7 +23,7 @@ migration yang tersedia di repositori.
 - [Menjalankan secara lokal](#menjalankan-secara-lokal)
 - [Memperbarui instalasi](#memperbarui-instalasi)
 - [Build dan pengujian](#build-dan-pengujian)
-- [Berkas lokal dan dokumentasi lanjutan](#berkas-lokal-dan-dokumentasi-lanjutan)
+- [Dokumentasi tambahan](#dokumentasi-tambahan)
 
 ## Teknologi dan arsitektur
 
@@ -848,17 +848,9 @@ Panduan pengujian PostgreSQL dan import data MySQL lama tersedia pada
 [panduan frontend](src/frontend/README.md) dan
 [playwright.config.js](src/frontend/playwright.config.js).
 
-## Berkas lokal dan dokumentasi lanjutan
+## Dokumentasi tambahan
 
-- [Panduan backend](src/backend/README.md): konfigurasi PostgreSQL, detail
-  penyimpanan, pengujian, dan perintah `pipeline:import-mysql`. Import memerlukan
-  database tujuan kosong dan tidak menyalin token/sesi lama.
+- [Panduan backend](src/backend/README.md): konfigurasi PostgreSQL, pembaruan
+  instalasi, API, pengujian, dan import data MySQL lama.
 - [Panduan frontend](src/frontend/README.md): menjalankan aplikasi, komponen
   tampilan, dan tes browser.
-- `src/docs/` menyimpan dokumentasi sistem dan materi pendukung secara lokal;
-  folder ini diabaikan Git dan tidak disertakan pada versi repo terbaru.
-- `arsip-lokal/` menyimpan backup, log, hasil review, cache, dan salinan frontend
-  lama. Folder ini diabaikan Git; `manifest.json` arsip mencatat lokasi asal
-  dan checksum SHA-256.
-- Dependensi, hasil build, hasil tes, dan `.env` diabaikan Git. Template
-  `.env.example` dan `.env.production.example` backend tetap disertakan.
