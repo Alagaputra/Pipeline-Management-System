@@ -1,4 +1,7 @@
 export const PRODUCTS = ['Tabungan', 'Giro', 'Deposito']
+export const isUnitPipeline = (product) => ['CMS', 'Bale Syariah', 'QRIS'].includes(product)
+export const opportunityValue = (product, value) =>
+  isUnitPipeline(product) ? Number(value || 0) + ' unit' : compactMoney(value)
 import { ACCOUNTS } from '../data/access.js'
 import { sumAmounts, remainingAmount } from './amounts.js'
 export const PEOPLE = ACCOUNTS.filter((account) => account.role === 'pic').map(
@@ -50,6 +53,13 @@ export const money = (value) =>
     currency: 'IDR',
     maximumFractionDigits: 0,
   }).format(typeof value === 'number' && !Number.isInteger(value) ? value : BigInt(value ?? 0))
+const millionFormatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 6 })
+export function moneyInMillions(value) {
+  const rupiah = BigInt(value ?? 0)
+  const whole = rupiah / 1000000n
+  const fraction = String(rupiah % 1000000n).padStart(6, '0')
+  return 'Rp ' + millionFormatter.format(whole + '.' + fraction) + ' juta'
+}
 export const compactMoney = (value) => {
   if (!Number.isSafeInteger(Number(value))) return money(value)
   const billions = value / 1e9
@@ -107,7 +117,10 @@ export function pipelineFieldErrors(
     pic: people.includes(row.pic),
     product: products.includes(row.product),
     status: STATUSES.includes(row.status),
-    segment: SEGMENTS.includes(row.segment) || (legacy && row.segment === 'Small'),
+    segment:
+      isUnitPipeline(row.product) ||
+      SEGMENTS.includes(row.segment) ||
+      (legacy && row.segment === 'Small'),
   }))
     if (!valid) errors[key] = 'Lengkapi PIC, produk, status, dan segmentasi Mid/Large.'
   if (!Number.isSafeInteger(row.nominal) || row.nominal <= 0)

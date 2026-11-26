@@ -43,6 +43,7 @@ function draw() {
     type: props.type,
     data: JSON.parse(JSON.stringify(props.data)),
     options: {
+      locale: 'id-ID',
       responsive: true,
       maintainAspectRatio: false,
       animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -55,20 +56,13 @@ function draw() {
             scales: {
               y: {
                 beginAtZero: true,
-                title: { display: true, text: 'Miliar rupiah' },
+                title: { display: true, text: 'Juta rupiah' },
                 ...(props.integerAxis
                   ? {
-                      suggestedMax: 3,
+                      suggestedMax: 1,
                       ticks: {
                         precision: 0,
-                        stepSize: 1,
                         maxTicksLimit: 8,
-                        callback: (value) =>
-                          value > 0 && Number.isInteger(Number(value))
-                            ? new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(
-                                value,
-                              )
-                            : '',
                       },
                     }
                   : {}),

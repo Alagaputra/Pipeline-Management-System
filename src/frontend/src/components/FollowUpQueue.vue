@@ -13,15 +13,14 @@ defineEmits(['open'])
           Perlu ditindaklanjuti <span class="count-badge">{{ count }}</span>
         </h2>
       </div>
-      <RouterLink to="/pipeline?followup=1" class="text-button"
+      <RouterLink v-if="count" to="/pipeline?followup=1" class="text-button"
         >Lihat semua <AppIcon name="arrow" :size="16"
       /></RouterLink>
     </div>
     <div v-if="!count" class="queue-empty">
       <span class="metric-icon"><AppIcon name="success" :size="19" /></span>
       <div>
-        <strong>Semua tindak lanjut terpantau</strong>
-        <p>Belum ada jadwal yang jatuh tempo. Anda bisa melanjutkan peluang aktif.</p>
+        <strong>Belum ada tindak lanjut yang jatuh tempo.</strong>
       </div>
       <RouterLink to="/pipeline" class="text-button">Buka Pipeline</RouterLink>
     </div>

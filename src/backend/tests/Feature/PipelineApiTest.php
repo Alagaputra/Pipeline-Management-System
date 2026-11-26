@@ -22,6 +22,36 @@ class PipelineApiTest extends TestCase
         $this->seed(DatabaseSeeder::class);
     }
 
+    public function test_service_pipeline_is_one_unit_and_won_counts_as_service_realization(): void
+    {
+        $nisa = User::where('username', 'nisa')->firstOrFail();
+        Sanctum::actingAs($nisa);
+        foreach (['cms', 'bale-syariah', 'qris'] as $code) {
+            $response = $this->postJson('/api/opportunities', [
+                'pic_id' => $nisa->id, 'product_id' => Product::where('code', $code)->value('id'),
+                'customer_name' => 'Service customer', 'interest_status' => 'Hot',
+                'recorded_date' => today()->toDateString(),
+            ])->assertCreated()->assertJsonPath('nominal', '1')->assertJsonPath('segment', '');
+            $this->postJson('/api/opportunities/'.$response->json('id').'/closing', [
+                'version' => 1, 'outcome' => 'Won', 'closed_date' => today()->toDateString(),
+            ])->assertOk()->assertJsonPath('realization', '1');
+        }
+        $this->getJson('/api/dashboard?year='.today()->year)->assertOk()
+            ->assertJsonPath('realization', 0)
+            ->assertJsonPath('realized_units', 3)
+            ->assertJsonPath('daily.'.(today()->dayOfYear - 1).'.realized_units', 3)
+            ->assertJsonPath('service_realizations.CMS.'.today()->month, 1)
+            ->assertJsonPath('service_realizations.Bale Syariah.'.today()->month, 1)
+            ->assertJsonPath('service_realizations.QRIS.'.today()->month, 1);
+        Sanctum::actingAs(User::where('username', 'suci')->firstOrFail());
+        $this->getJson('/api/dashboard?year='.today()->year)->assertOk()
+            ->assertJsonPath('service_realizations.CMS.'.today()->month, 1)
+            ->assertJsonPath('realized_units', 0)
+            ->assertJsonPath('daily.'.(today()->dayOfYear - 1).'.realized_units', 0)
+            ->assertJsonMissingPath('service_realizations.Bale Syariah')
+            ->assertJsonMissingPath('service_realizations.QRIS');
+    }
+
     public function test_login_returns_token_and_user_scope(): void
     {
         $this->postJson('/api/login', ['username' => 'nisa', 'password' => 'demo123'])

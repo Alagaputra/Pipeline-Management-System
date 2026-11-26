@@ -1,8 +1,12 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { api } from '../services/api'
-import { money, timeLabel, dateLabel } from '../utils/pipeline'
-const props = defineProps({ id: { type: String, required: true }, version: Number })
+import { money, timeLabel, dateLabel, isUnitPipeline } from '../utils/pipeline'
+const props = defineProps({
+  id: { type: String, required: true },
+  version: Number,
+  product: String,
+})
 const events = ref([])
 const loading = ref(false)
 const error = ref('')
@@ -32,7 +36,10 @@ const fields = {
 }
 function format(key, value, event, side) {
   if (value === null || value === undefined || value === '') return 'Belum diisi'
-  if (key === 'nominal' || key === 'realization') return money(Number(value))
+  if (key === 'nominal' || key === 'realization')
+    return isUnitPipeline(event[side]?.product?.name || props.product)
+      ? Number(value) + ' unit'
+      : money(Number(value))
   if (key.endsWith('_date')) return dateLabel(value)
   if (key === 'follow_up_completed') return value ? 'Ya' : 'Belum'
   if (key === 'pic_id') return event[side]?.pic?.name || `PIC #${value}`

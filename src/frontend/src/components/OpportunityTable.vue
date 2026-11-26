@@ -1,7 +1,7 @@
 <script setup>
 import AppIcon from './AppIcon.vue'
 import StatusBadge from './StatusBadge.vue'
-import { dateLabel, dueState, compactMoney, isClosed } from '../utils/pipeline'
+import { dateLabel, dueState, opportunityValue, isClosed } from '../utils/pipeline'
 defineProps({ rows: Array, history: Boolean })
 defineEmits(['select'])
 const labels = { overdue: 'Terlambat', today: 'Hari ini', upcoming: 'Terjadwal' }
@@ -37,9 +37,11 @@ const labels = { overdue: 'Terlambat', today: 'Hari ini', upcoming: 'Terjadwal' 
               {{ row.customer }}</button
             ><small class="cell-subtitle">{{ row.product }} · {{ row.division }}</small>
           </td>
-          <td v-if="!history">{{ row.segment }}</td>
-          <td class="number nominal">{{ compactMoney(row.nominal) }}</td>
-          <td v-if="history" class="number nominal">{{ compactMoney(row.realization) }}</td>
+          <td v-if="!history">{{ row.segment || '—' }}</td>
+          <td class="number nominal">{{ opportunityValue(row.product, row.nominal) }}</td>
+          <td v-if="history" class="number nominal">
+            {{ opportunityValue(row.product, row.realization) }}
+          </td>
           <td><StatusBadge :status="isClosed(row) ? row.outcome : row.status" /></td>
           <td v-if="!history">
             <span v-if="row.completed" class="due-label completed">Selesai</span
@@ -69,13 +71,6 @@ const labels = { overdue: 'Terlambat', today: 'Hari ini', upcoming: 'Terjadwal' 
               <h3>
                 {{ history ? 'Belum ada closing yang sesuai' : 'Peluang tidak ditemukan' }}
               </h3>
-              <p>
-                {{
-                  history
-                    ? 'Peluang Won/Lost akan tersimpan di sini. Periksa filter jika data tidak terlihat.'
-                    : 'Ubah pencarian atau filter, atau catat peluang baru.'
-                }}
-              </p>
             </div>
           </td>
         </tr>

@@ -5,6 +5,82 @@ import { login, request } from './support.js'
 const today = localDate()
 const customer = `PT Integrasi ${Date.now()}`
 
+test('pipeline layanan memakai satu unit tanpa segmentasi dan menambah realisasi Won', async ({
+  page,
+}) => {
+  await login(page, 'nisa')
+  const card = page.getByRole('article', { name: 'Target unit Bale Syariah', exact: true })
+  const initial = Number(
+    (await card.locator('[data-metric=realization]').innerText()).replace(/[^0-9]/g, ''),
+  )
+  await page.getByRole('link', { name: 'Pipeline', exact: true }).click()
+  await page.getByRole('button', { name: 'Catat peluang', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  const name = `Peluang Bale ${Date.now()}`
+  await dialog.getByLabel('Nama nasabah').fill(name)
+  await dialog.getByLabel('Produk').selectOption('Bale Syariah')
+  await expect(dialog.getByLabel('Segmentasi')).toHaveCount(0)
+  await expect(dialog.getByLabel('Nominal peluang (rupiah)')).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Simpan peluang', exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+  await page.getByRole('button', { name, exact: true }).click()
+  await dialog.getByRole('button', { name: 'Closing Won', exact: true }).click()
+  await expect(dialog.getByLabel('Realisasi dana (rupiah)')).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Simpan closing Won', exact: true }).click()
+  await expect(dialog.getByRole('region', { name: 'Konfirmasi closing' })).toContainText('1 unit')
+  await dialog.getByRole('button', { name: 'Konfirmasi closing Won', exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+  await page.getByRole('link', { name: 'Dashboard', exact: true }).click()
+  await expect(card.locator('[data-metric=realization]')).toHaveText(initial + 1 + ' unit')
+})
+
+test('form CMS menggunakan satu unit dan menutup Won tanpa nominal rupiah', async ({ page }) => {
+  await login(page, 'suci')
+  await page.getByRole('link', { name: 'Pipeline', exact: true }).click()
+  await page.getByRole('button', { name: 'Catat peluang', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  const name = `Peluang CMS ${Date.now()}`
+  await dialog.getByLabel('Nama nasabah').fill(name)
+  await dialog.getByLabel('Produk').selectOption('CMS')
+  await expect(dialog.getByLabel('Segmentasi')).toHaveCount(0)
+  await expect(dialog.getByLabel('Nominal peluang (rupiah)')).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Simpan peluang', exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+  await page.getByRole('button', { name, exact: true }).click()
+  await dialog.getByRole('button', { name: 'Closing Won', exact: true }).click()
+  await dialog.getByRole('button', { name: 'Simpan closing Won', exact: true }).click()
+  await expect(dialog.getByRole('region', { name: 'Konfirmasi closing' })).toContainText('1 unit')
+  await dialog.getByRole('button', { name: 'Konfirmasi closing Won', exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+})
+
+test('pipeline QRIS Won menambah satu unit pada realisasi target', async ({ page }) => {
+  await login(page, 'nisa')
+  const card = page.getByRole('article', { name: 'Target unit QRIS', exact: true })
+  const initial = Number(
+    (await card.locator('[data-metric=realization]').innerText()).replace(/[^0-9]/g, ''),
+  )
+  await page.getByRole('link', { name: 'Pipeline', exact: true }).click()
+  await page.getByRole('button', { name: 'Catat peluang', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  const name = `Peluang QRIS ${Date.now()}`
+  await dialog.getByLabel('Nama nasabah').fill(name)
+  await dialog.getByLabel('Produk').selectOption('QRIS')
+  await expect(dialog.getByLabel('Segmentasi')).toHaveCount(0)
+  await expect(dialog.getByLabel('Nominal peluang (rupiah)')).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Simpan peluang', exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+  await page.getByRole('button', { name, exact: true }).click()
+  await dialog.getByRole('button', { name: 'Closing Won', exact: true }).click()
+  await expect(dialog.getByLabel('Realisasi dana (rupiah)')).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Simpan closing Won', exact: true }).click()
+  await expect(dialog.getByRole('region', { name: 'Konfirmasi closing' })).toContainText('1 unit')
+  await dialog.getByRole('button', { name: 'Konfirmasi closing Won', exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+  await page.getByRole('link', { name: 'Dashboard', exact: true }).click()
+  await expect(card.locator('[data-metric=realization]')).toHaveText(initial + 1 + ' unit')
+})
+
 test('PIC menyimpan opportunity dan closing Won ke PostgreSQL melalui Laravel', async ({
   page,
 }) => {
@@ -107,17 +183,20 @@ test('target dana tersimpan di API dan tetap ada setelah reload', async ({ page 
   await expect(page.getByRole('article', { name: 'Target unit QRIS', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: 'Atur target', exact: true }).click()
   await page.getByLabel('Target Tabungan (rupiah)').fill('1000000000')
+  await page.getByLabel('Produk untuk alokasi bulanan').selectOption('Tabungan')
+  await page.getByLabel('Target Tabungan Januari (rupiah)').fill('1000000000')
   await page.getByRole('button', { name: 'Simpan target', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('berhasil disimpan')
   await page.reload()
   const targetCard = page.getByRole('article', { name: 'Pencapaian Tabungan', exact: true })
-  await expect(targetCard.locator('dd').first()).toContainText('Rp 1 M')
-  await expect(page.getByText('Target bulanan', { exact: true })).toHaveCount(0)
+  await expect(targetCard.locator('dd').first()).toContainText('Rp 1.000 juta')
+  await page.getByLabel('Bulan target unit').selectOption('1')
+  await expect(targetCard).toContainText(/Target Januari.*Rp 1\.000 juta/)
   await expect(page.getByText('Target KCP Bekasi', { exact: true })).toHaveCount(0)
   await page.screenshot({ path: 'test-results/target-desktop.png', fullPage: true })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.reload()
-  await expect(targetCard.locator('dd').first()).toContainText('Rp 1 M')
+  await expect(targetCard.locator('dd').first()).toContainText('Rp 1.000 juta')
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
     .toBe(true)
@@ -133,7 +212,9 @@ test('dashboard memakai ringkasan API dan menampilkan grafik Chart.js pada deskt
   const errors = []
   page.on('pageerror', (error) => errors.push(error.message))
   await login(page)
-  await expect(page.getByRole('heading', { name: 'Target dan realisasi tahunan' })).toBeVisible()
+  await expect(page.locator('.dashboard-metric')).toHaveCount(3)
+  await expect(page.locator('.queue-row').nth(3)).toHaveCount(0)
+  await expect(page.locator('main details')).toHaveCount(0)
   await page.getByRole('link', { name: 'Pipeline', exact: true }).click()
   await page.getByRole('button', { name: 'Catat peluang', exact: true }).click()
   const dialog = page.getByRole('dialog')
@@ -142,26 +223,21 @@ test('dashboard memakai ringkasan API dan menampilkan grafik Chart.js pada deskt
   await dialog.getByRole('button', { name: 'Simpan peluang', exact: true }).click()
   await expect(dialog).not.toBeVisible()
   await page.getByRole('link', { name: 'Dashboard', exact: true }).click()
-  await expect(
-    page.getByRole('img', { name: 'Distribusi peluang aktif Cold, Warm, dan Hot' }),
-  ).toBeVisible()
-  await expect(page.locator('.dashboard-target-card')).toHaveCount(3)
+  await expect(page.getByRole('heading', { name: 'Ketertarikan nasabah' })).toBeVisible()
+  await expect(page.locator('.interest-donut')).toBeVisible()
+  await expect(page.locator('.interest-list > div')).toHaveCount(3)
+  await expect(page.locator('.product-progress[data-measure=idr]')).toHaveCount(3)
   await expect(page.getByRole('article', { name: 'Target Tabungan', exact: true })).toContainText(
-    'Realisasi Won',
+    'Realisasi',
   )
-  await expect(
-    page.getByRole('img', { name: 'Perbandingan target tahunan dan realisasi Won per produk' }),
-  ).toHaveCount(0)
-  await page.getByText('Lihat perbandingan grafik', { exact: true }).click()
-  await expect(
-    page.getByRole('img', { name: 'Perbandingan target tahunan dan realisasi Won per produk' }),
-  ).toBeVisible()
-  await page.getByText('Lihat perbandingan grafik', { exact: true }).click()
   await expect(
     page.getByRole('img', { name: 'Nilai peluang yang dicatat dan realisasi Won setiap bulan' }),
   ).toBeVisible()
-  await page.getByText('Lihat rincian bulanan', { exact: true }).click()
-  await expect(page.locator('.trend-panel tbody tr')).toHaveCount(12)
+  const year = new Date().getFullYear()
+  await expect(page.getByRole('heading', { name: 'Rincian harian' })).toHaveCount(0)
+  await expect(page.getByLabel('Bulan rincian harian')).toHaveCount(0)
+  await page.getByLabel('Tahun laporan').selectOption(String(year - 1))
+  await page.getByLabel('Tahun laporan').selectOption(String(year))
   await page.screenshot({ path: 'test-results/proposal-dashboard-desktop.png', fullPage: true })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.reload()
@@ -183,7 +259,7 @@ test('akun Konsumer menampilkan dan menyimpan Bale, QRIS, CMS tanpa pilihan Giro
   await page.getByRole('link', { name: 'Pipeline', exact: true }).click()
   await page.getByRole('button', { name: 'Catat peluang', exact: true }).click()
   const product = page.getByRole('dialog').getByLabel('Produk')
-  await expect(product.locator('option')).toHaveCount(2)
+  await expect(product.locator('option')).toHaveCount(5)
   await expect(product.locator('option', { hasText: 'Giro' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Batal', exact: true }).click()
   await page.getByRole('link', { name: 'Target', exact: true }).click()
@@ -202,7 +278,9 @@ test('akun Konsumer menampilkan dan menyimpan Bale, QRIS, CMS tanpa pilihan Giro
       .getByLabel('Target tahunan ' + name + ' (unit)', { exact: true })
       .fill(String(target))
     await dialog.getByLabel('Target ' + name + ' Januari (unit)', { exact: true }).fill('20')
-    await dialog.getByLabel('Realisasi ' + name + ' Januari (unit)', { exact: true }).fill('8')
+    await expect(
+      dialog.getByLabel('Realisasi ' + name + ' Januari (unit)', { exact: true }),
+    ).toHaveCount(0)
     await dialog.getByRole('button', { name: 'Simpan target unit', exact: true }).click()
     await expect(dialog).not.toBeVisible()
     await expect(services.getByRole('status')).toContainText(name + ' tahun')
@@ -217,7 +295,6 @@ test('akun Konsumer menampilkan dan menyimpan Bale, QRIS, CMS tanpa pilihan Giro
     const card = page.getByRole('article', { name: 'Target unit ' + name, exact: true })
     await expect(card.locator('[data-metric=target]')).toHaveText(target + ' unit')
     await expect(card.locator('.unit-month-values dd').first()).toHaveText('20 unit')
-    await expect(card.locator('.unit-month-values dd').last()).toHaveText('8 unit')
   }
   await page.getByRole('link', { name: 'Dashboard', exact: true }).click()
   await expect(
@@ -234,7 +311,9 @@ test('akun Konsumer menampilkan dan menyimpan Bale, QRIS, CMS tanpa pilihan Giro
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
     .toBe(true)
-  await services.screenshot({ path: 'test-results/konsumer-unit-targets-320.png' })
+  await page.locator('.product-section').screenshot({
+    path: 'test-results/konsumer-unit-targets-320.png',
+  })
 })
 
 test('peluang baru tetap aktif dan tindak lanjut dapat dicatat langsung dari Dashboard', async ({
@@ -371,9 +450,7 @@ test('pencarian dan filter URL pulih setelah reload dan navigasi kembali', async
   await expect(page.getByLabel('Filter produk')).toHaveValue('Tabungan')
   await expect(page.getByLabel('Urutkan peluang')).toHaveValue('nominal')
   await page.getByRole('link', { name: 'Dashboard', exact: true }).click()
-  await expect(
-    page.getByRole('heading', { name: 'Selamat bekerja, Suci', exact: true }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
   await page.goBack()
   await expect(page.getByLabel('Cari peluang')).toHaveValue('PT')
   await page.getByRole('button', { name: 'Hapus filter', exact: true }).click()
@@ -396,4 +473,50 @@ test('target kosong di dashboard membuka formulir produk dengan fokus dan valida
   await dialog.getByRole('button', { name: 'Simpan target', exact: true }).click()
   await expect(dialog.locator('#target-error-Tabungan')).toBeVisible()
   await expect(dialog.getByLabel('Target Tabungan (rupiah)')).toBeFocused()
+})
+
+test('dua PIC bernama sama tersimpan sesuai ID yang dipilih', async ({ page }) => {
+  let selectedId
+  await page.route('**/api/pics', async (route) => {
+    const response = await route.fetch()
+    const pics = await response.json()
+    const duplicates = pics.slice(0, 2)
+    selectedId = duplicates[1].id
+    await route.fulfill({
+      response,
+      json: pics.map((pic) => duplicates.some((entry) => entry.id === pic.id)
+        ? { ...pic, name: 'Nama Sama' } : pic),
+    })
+  })
+  await login(page)
+  await page.getByRole('link', { name: 'Pipeline', exact: true }).click()
+  await page.getByRole('button', { name: 'Catat peluang', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  const picker = dialog.getByLabel('PIC', { exact: true })
+  await expect(picker.locator('option').filter({ hasText: /Nama Sama \(.+\)/ })).toHaveCount(2)
+  await picker.selectOption(String(selectedId))
+  await dialog.getByLabel('Nama nasabah').fill('Uji identitas PIC ' + Date.now())
+  await dialog.getByLabel('Nominal peluang (rupiah)').fill('1000000')
+  const saved = page.waitForResponse((res) => res.url().endsWith('/api/opportunities') && res.request().method() === 'POST')
+  await dialog.getByRole('button', { name: 'Simpan peluang', exact: true }).click()
+  const response = await saved
+  expect(response.status()).toBe(201)
+  const opportunity = await response.json()
+  const stored = await request(page, '/opportunities/' + opportunity.id)
+  expect(stored.body.pic_id).toBe(selectedId)
+})
+
+test('tautan target April membuka isian Deposito dan CMS untuk April', async ({ page }) => {
+  await login(page)
+  for (const product of ['Deposito', 'CMS']) {
+    await page.getByLabel('Tahun laporan').selectOption(String(new Date().getFullYear() + 1))
+    await page.getByRole('button', { name: 'Bulanan', exact: true }).click()
+    await page.getByLabel('Bulan target unit').selectOption('4')
+    await page.getByRole('link', { name: 'Tetapkan target ' + product, exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    const unit = product === 'CMS' ? 'unit' : 'rupiah'
+    await expect(dialog.getByLabel('Target ' + product + ' April (' + unit + ')', { exact: true })).toBeFocused()
+    await dialog.getByRole('button', { name: 'Batal', exact: true }).click()
+    await page.getByRole('link', { name: 'Dashboard', exact: true }).click()
+  }
 })

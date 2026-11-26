@@ -1777,6 +1777,7 @@ tbody tr:hover {
   display: grid;
   grid-template-columns: 1fr 420px;
   column-gap: 12%;
+  align-items: center;
   max-width: 1100px;
   margin: 100px auto 95px;
   position: relative;
@@ -1810,7 +1811,7 @@ tbody tr:hover {
 }
 .login-card {
   grid-column: 2;
-  grid-row: 1/5;
+  grid-row: 1;
   align-self: center;
   background: #fff;
   color: #3c3546;
@@ -2262,6 +2263,7 @@ tbody tr:hover {
     flex-direction: column;
     max-width: 420px;
     margin: 35px auto;
+    gap: 22px;
   }
   .login-kicker {
     margin-top: 0;

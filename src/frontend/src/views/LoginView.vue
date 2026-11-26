@@ -33,11 +33,9 @@ async function submit() {
       <span class="brand-symbol">p<span></span></span>pipeline
     </div>
     <div class="login-content">
-      <span class="login-kicker">SETIAP PELUANG, SATU LANGKAH LEBIH DEKAT.</span>
       <h1>Pipeline Management System<span>.</span></h1>
-      <p class="login-subtitle">Kelola peluang. Jaga hubungan.<br />Capai target bersama tim.</p>
       <div class="login-card">
-        <h2>Selamat datang kembali</h2>
+        <h2>Masuk</h2>
         <p v-if="sessionNotice" class="notice closing-note" role="status">{{ sessionNotice }}</p>
         <form @submit.prevent="submit">
           <label for="username">Username</label>

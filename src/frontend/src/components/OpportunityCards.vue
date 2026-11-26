@@ -1,7 +1,7 @@
 <script setup>
 import StatusBadge from './StatusBadge.vue'
 import AppIcon from './AppIcon.vue'
-import { compactMoney, money, dateLabel, dueState, isClosed } from '../utils/pipeline'
+import { opportunityValue, dateLabel, dueState, isClosed } from '../utils/pipeline'
 defineProps({ rows: Array, history: Boolean })
 defineEmits(['select'])
 const dueLabels = { overdue: 'Terlambat', today: 'Hari ini', upcoming: 'Terjadwal' }
@@ -19,11 +19,11 @@ const dueLabels = { overdue: 'Terlambat', today: 'Hari ini', upcoming: 'Terjadwa
       <dl class="mobile-opportunity-values">
         <div>
           <dt>Nominal peluang</dt>
-          <dd :title="money(row.nominal)">{{ compactMoney(row.nominal) }}</dd>
+          <dd>{{ opportunityValue(row.product, row.nominal) }}</dd>
         </div>
         <div v-if="history">
           <dt>Realisasi Won</dt>
-          <dd :title="money(row.realization)">{{ compactMoney(row.realization) }}</dd>
+          <dd>{{ opportunityValue(row.product, row.realization) }}</dd>
         </div>
       </dl>
       <div class="mobile-opportunity-footer">
@@ -50,7 +50,6 @@ const dueLabels = { overdue: 'Terlambat', today: 'Hari ini', upcoming: 'Terjadwa
     <div v-if="!rows.length" class="empty-state">
       <AppIcon name="search" :size="28" />
       <h3>{{ history ? 'Belum ada hasil yang sesuai' : 'Peluang tidak ditemukan' }}</h3>
-      <p>Periksa pencarian atau filter yang sedang digunakan.</p>
     </div>
   </div>
 </template>

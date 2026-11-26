@@ -33,7 +33,7 @@ class ReportController extends Controller
             'opportunities as won' => fn ($q) => $scope($q)->where('outcome', 'Won'),
             'opportunities as lost' => fn ($q) => $scope($q)->where('outcome', 'Lost'),
         ])->get();
-        $nominals = $scope(Opportunity::query())->whereIn('pic_id', $pics->modelKeys())->where('outcome', 'Active')->get(['pic_id', 'nominal'])->groupBy('pic_id');
+        $nominals = $scope(Opportunity::query())->whereHas('product', fn ($product) => $product->where('measure', 'IDR'))->whereIn('pic_id', $pics->modelKeys())->where('outcome', 'Active')->get(['pic_id', 'nominal'])->groupBy('pic_id');
         return $pics->each(fn ($pic) => $pic->setAttribute('active_nominal', ExactAmount::sum($nominals->get($pic->id)?->pluck('nominal') ?? [])));
     }
 

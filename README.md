@@ -85,10 +85,7 @@ divisi pengguna yang membaca, termasuk setelah PIC dipindahkan ke divisi lain.
 | QRIS         | `qris`         | Unit (`UNIT`)  | Ya       | Tidak    | `konsumer`   |
 | CMS          | `cms`          | Unit (`UNIT`)  | Ya       | Ya       | `shared`     |
 
-Peluang nasabah hanya menggunakan produk `IDR`. Realisasi dana berasal dari
-closing **Won**, sedangkan realisasi layanan dicatat manual per bulan.
-CMS menggunakan satu record target per tahun yang dibaca dan dikelola kedua
-divisi, sehingga tidak menjadi dua target terpisah.
+Produk dana dicatat dalam rupiah. Satu pipeline Bale Syariah, QRIS, atau CMS mewakili satu unit dan tidak memerlukan segmen Mid/Large. Closing Won menambah satu unit pada bulan closing. Target layanan menjumlahkan unit Won dan realisasi manual yang sudah tersimpan. CMS memiliki satu target bersama untuk kedua divisi.
 
 ## Rincian fitur
 
@@ -109,24 +106,17 @@ divisi, sehingga tidak menjadi dua target terpisah.
 
 ### 2. Dashboard (`/#/`)
 
-- Kartu jumlah peluang aktif, nominal potensi aktif, jumlah dan nominal peluang
-  **Hot**, serta realisasi Won pada tahun pilihan.
-- Ringkasan target dan realisasi tahunan per produk dana: target, realisasi,
-  persentase pencapaian, progress bar, dan sisa target.
-- Grafik perbandingan target dengan realisasi, distribusi **Cold/Warm/Hot**,
-  serta tren nominal peluang tercatat dan realisasi Won per bulan.
-- Antrean follow-up yang jatuh tempo hari ini atau terlambat; ringkasan menampilkan
-  maksimal lima peluang terawal beserta akses ke detail dan daftar follow-up.
-- Ringkasan target layanan dalam unit, termasuk pencapaian tahunan dan rincian
-  bulan yang dipilih.
-- Tautan dari target dana yang belum ditetapkan langsung membuka formulir Target
-  untuk produk dan tahun terkait.
+- Tiga kartu menampilkan realisasi dana Won, realisasi unit Won, dan potensi dana aktif. Kartu unit menghitung closing Won dalam cakupan divisi dan tahun laporan.
+- Grafik perkembangan membandingkan dana yang dicatat dan direalisasikan per bulan dalam juta rupiah. Diagram lingkaran menunjukkan komposisi Cold, Warm, dan Hot untuk peluang aktif.
+- Antrean menampilkan hingga tiga tindak lanjut terawal yang sudah jatuh tempo, dengan tautan ke daftar lengkap.
+- Bagian **Progres target** menampilkan satu baris per produk. Pilih **Tahunan** atau **Bulanan** untuk melihat realisasi, target, dan persentase periode tersebut. Jika target kosong dan pengguna memiliki akses edit, **Tetapkan target** membuka isian produk dan tahun terkait. Pada tampilan bulanan, bulan yang dipilih ikut dibuka.
 
 ### 3. Pipeline aktif (`/#/pipeline`)
 
 - Membuat dan mengubah peluang dengan nama nasabah, PIC, produk, segmen,
   nominal potensi, status ketertarikan, tanggal pencatatan, jadwal follow-up,
   dan catatan.
+- Pilihan PIC memakai ID akun. Jika namanya sama, formulir menampilkan username untuk membedakan akun.
 - Mengalihkan PIC dalam divisi yang sama sambil menyimpan riwayat penugasan lama.
 - Mencari berdasarkan nasabah, PIC, atau produk; memfilter PIC, produk,
   status ketertarikan, dan follow-up jatuh tempo.
@@ -142,7 +132,7 @@ divisi, sehingga tidak menjadi dua target terpisah.
 - Menjadwalkan dan menandai follow-up selesai tanpa menutup peluang.
 - Perubahan tanggal follow-up mengembalikan penanda penyelesaian menjadi belum
   selesai, sehingga jadwal baru dapat ditindaklanjuti.
-- Closing **Won** mencatat tanggal closing, realisasi dana, dan catatan opsional.
+- Closing **Won** mencatat tanggal closing dan catatan opsional. Untuk dana, masukkan realisasi dalam rupiah. Untuk layanan, aplikasi menghitung satu unit.
 - Closing **Lost** mencatat tanggal closing, alasan kehilangan, dan catatan opsional;
   realisasi disimpan sebagai nol.
 - Ringkasan closing diperiksa sebelum konfirmasi. Setelah berhasil, peluang
@@ -156,10 +146,9 @@ divisi, sehingga tidak menjadi dua target terpisah.
   terbuka mengharuskan pemuatan ulang sebelum menyimpan.
 - Menyimpan beberapa target produk sekaligus melalui satu batch transaksi.
 - Menampilkan total target, realisasi Won, persentase pencapaian, dan sisa target.
-- Mengelola target tahunan layanan serta target dan realisasi unit untuk 12 bulan.
+- Mengatur target tahunan dan alokasi Januari–Desember per produk. Masukkan dana dalam rupiah dan layanan dalam unit. Ringkasan dana ditampilkan dalam juta rupiah.
 - Menampilkan CMS sebagai target bersama lintas divisi.
-- Backend juga menyediakan target dana bulanan dan target cabang melalui API;
-  formulir target dana pada halaman ini berfokus pada target tahunan produk.
+- Form layanan menunjukkan selisih alokasi bulanan terhadap target tahunan. Target cabang tersedia melalui API.
 
 ### 6. Tim / PIC (`/#/tim`)
 
@@ -207,11 +196,11 @@ divisi, sehingga tidak menjadi dua target terpisah.
 | Area           | Aturan yang diterapkan                                                                                                                                  |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status peluang | `outcome`: `Active`, `Won`, atau `Lost`; `interest_status`: `Cold`, `Warm`, atau `Hot`. Keduanya memiliki fungsi berbeda.                               |
-| Segmen         | Peluang baru menggunakan `Mid` atau `Large`. `Small` hanya dipertahankan untuk pembaruan data lama yang sudah memakai segmen tersebut.                  |
-| PIC dan produk | PIC harus aktif, memiliki role `pic`, dan berasal dari divisi peluang. Produk peluang harus aktif, bersatuan `IDR`, dan tersedia pada divisi tersebut.  |
+| Segmen         | Peluang dana baru menggunakan `Mid` atau `Large`. `Small` hanya dipertahankan untuk pembaruan data lama yang sudah memakai segmen tersebut.                  |
+| PIC dan produk | PIC harus aktif, memiliki role `pic`, dan berasal dari divisi peluang. Produk peluang harus aktif, dan tersedia pada divisi tersebut.  |
 | Nominal        | Nominal potensi berupa rupiah bulat lebih dari nol. Target dan realisasi unit berupa bilangan bulat minimal nol.                                        |
 | Tanggal        | Tanggal pencatatan tidak melewati hari ini; follow-up tidak mendahului pencatatan; tanggal closing berada antara tanggal pencatatan dan hari ini.       |
-| Won            | Realisasi wajib lebih dari nol dan boleh melebihi nominal potensi. Nominal potensi asli tetap disimpan.                                                 |
+| Won            | Realisasi dana wajib positif dan boleh melebihi nominal potensi. Layanan menghasilkan satu unit. Nominal potensi asli tetap disimpan.                                                 |
 | Lost           | Alasan wajib diisi; realisasi ditetapkan nol oleh backend.                                                                                              |
 | Closing final  | Peluang Won/Lost tidak dapat diedit atau ditutup ulang melalui API yang tersedia.                                                                       |
 | Periode aktif  | Jumlah, nominal, status ketertarikan, dan antrean follow-up peluang aktif mencakup seluruh periode.                                                     |
@@ -386,7 +375,7 @@ erDiagram
 
 Target dana dan layanan memakai `annual_targets` yang sama; satuan ditentukan
 oleh `products.measure`. Realisasi dana dihitung dari `opportunities`, sedangkan
-realisasi layanan disimpan di `unit_realizations`. `branch_targets` menyimpan
+realisasi layanan berasal dari closing Won dan data manual lama di `unit_realizations`. `branch_targets` menyimpan
 target cabang tersendiri menggunakan kode cabang; skema belum memiliki tabel
 master cabang atau relasi cabang pada peluang.
 
@@ -513,7 +502,7 @@ perhitungan hasil closing. Semua halaman internal memerlukan sesi valid.
 
 ```mermaid
 flowchart TD
-    Create[Catat peluang: nasabah, PIC, produk, nominal, dan status] --> Validate[Validasi input dan akses divisi]
+    Create[Catat nasabah, PIC, produk dan status. Isi nominal untuk dana] --> Validate[Validasi input dan akses divisi]
     Validate --> Store[Transaksi: peluang Active, penugasan PIC, dan audit]
     Store --> Active[Peluang aktif: Cold / Warm / Hot]
     Active --> Edit[Ubah data, ketertarikan, atau PIC]
@@ -524,7 +513,7 @@ flowchart TD
     Queue --> Done[Tandai follow-up selesai]
     Done --> Active
     Active --> Closing{Hasil closing}
-    Closing -->|Won| Won[Isi tanggal, realisasi positif, dan catatan opsional]
+    Closing -->|Won| Won[Catat tanggal closing dan realisasi dana atau satu unit layanan]
     Closing -->|Lost| Lost[Isi tanggal, alasan Lost, dan catatan opsional]
     Won --> Review[Periksa ringkasan dan konfirmasi]
     Lost --> Review
@@ -540,8 +529,7 @@ sebelum closing. Setiap perubahan harus membawa `version` terbaru.
 ### 3. Pengelolaan target dan realisasi
 
 1. Pilih tahun dan divisi. Untuk CMS, aplikasi menggunakan scope `shared`.
-2. Untuk produk dana, isi target tahunan masing-masing produk. Untuk layanan,
-   isi target tahunan beserta target dan realisasi unit Januari–Desember.
+2. Isi target tahunan dan alokasi bulanan untuk produk yang dipilih. Form target hanya meminta nilai target.
 3. Frontend mengirim `/api/targets/batch` beserta versi target dan, untuk layanan,
    versi realisasi bulanan. Record baru menggunakan `version = 0`.
 4. Backend memvalidasi scope, akses divisi, produk, nilai, dan kelengkapan bulan,
@@ -549,7 +537,7 @@ sebelum closing. Setiap perubahan harus membawa `version` terbaru.
 5. Semua target, realisasi unit, dan audit disimpan bersama. Konflik versi
    membatalkan seluruh batch dan mengembalikan `409`.
 6. Antarmuka memperbarui target dan laporan. Realisasi dana dihitung dari Won
-   pada tahun closing; realisasi layanan dijumlahkan dari input bulanan.
+   pada periode closing. Realisasi layanan menggabungkan jumlah pipeline Won dan unit manual yang sudah tersimpan.
 
 ### 4. Penyimpanan, retry, dan konflik
 
@@ -714,6 +702,8 @@ Kemudian, dari direktori backend:
 .\php.cmd artisan migrate --seed
 .\php.cmd artisan serve
 ```
+
+Perintah `artisan serve` menjalankan server HTTP Laravel. Laravel membaca koneksi database dari konfigurasi backend. Untuk PostgreSQL lokal, gunakan `DB_CONNECTION=pgsql` dan atur `DB_DATABASE` di `src/backend/.env`. Jalankan layanan PostgreSQL sebelum mengakses aplikasi.
 
 API tersedia di `http://127.0.0.1:8000/api`. Wrapper `php.cmd` mengaktifkan
 ekstensi PostgreSQL melalui `php-conf.d/postgresql.ini`; instalasi PHP tetap

@@ -7,11 +7,10 @@ import MoneyInput from '../components/MoneyInput.vue'
 import AppIcon from '../components/AppIcon.vue'
 import YearFilter from '../components/YearFilter.vue'
 import AppDrawer from '../components/AppDrawer.vue'
-import TargetCardGrid from '../components/TargetCardGrid.vue'
 import TargetProgress from '../components/TargetProgress.vue'
 import UnitTargets from '../components/UnitTargets.vue'
 import { usePipeline } from '../composables/usePipeline'
-import { PRODUCTS, compactMoney, percent, validateTargets } from '../utils/pipeline'
+import { PRODUCTS, moneyInMillions, percent, validateTargets } from '../utils/pipeline'
 const {
   dashboard,
   annualTargets,
@@ -28,6 +27,10 @@ const summary = computed(() => dashboard.value?.summary || [])
 const route = useRoute()
 const router = useRouter()
 const formElement = ref(null)
+const monthNames = Array.from({ length: 12 }, (_, i) =>
+  new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(2024, i, 1)),
+)
+const allocationProduct = ref('')
 const fieldErrors = ref({})
 const editing = ref(false)
 const saving = ref(false)
@@ -36,7 +39,7 @@ const conflict = ref(false)
 const requestKey = ref(crypto.randomUUID())
 const error = ref('')
 const success = ref('')
-const draft = reactive({ year: selectedYear.value, Tabungan: 0, Giro: 0, Deposito: 0 })
+const draft = reactive({ year: selectedYear.value, monthly: [], Tabungan: 0, Giro: 0, Deposito: 0 })
 // Draft terpisah dari target tersimpan; baseline dipakai untuk mendeteksi perubahan.
 let baseline = ''
 let targetDraft
@@ -50,7 +53,13 @@ function edit() {
   uncertain.value = false
   conflict.value = false
   const stored = annualTargets.value[selectedYear.value] || {}
+  allocationProduct.value = products.value[0]
   Object.assign(draft, {
+    monthly: monthNames.map((_, i) =>
+      Object.fromEntries(
+        products.value.map((name) => [name, stored.monthly?.[i + 1]?.[name] || 0]),
+      ),
+    ),
     year: selectedYear.value,
     ...Object.fromEntries(PRODUCTS.map((product) => [product, Number(stored[product]) || 0])),
   })
@@ -73,13 +82,19 @@ watch(
     const product = products.value.includes(route.query.product)
       ? route.query.product
       : products.value[0]
+    const month = Number(route.query.month)
+    const monthly = Number.isInteger(month) && month >= 1 && month <= 12
+    if (monthly) allocationProduct.value = product
     const query = { ...route.query }
+    delete query.month
     delete query.edit
     delete query.product
     delete query.year
     await router.replace({ query })
     await nextTick()
-    formElement.value?.querySelector(`[name="${product}"]`)?.focus()
+    formElement.value
+      ?.querySelector(monthly ? `[data-target-month="${month}"]` : `[name="${product}"]`)
+      ?.focus()
   },
   { immediate: true },
 )
@@ -125,6 +140,14 @@ async function save() {
     )
       fieldErrors.value[product] = 'Isi rupiah bulat minimal nol.'
   }
+  for (const [i, row] of draft.monthly.entries()) {
+    for (const product of products.value) {
+      if (!/^\d+$/.test(String(row[product])) || !Number.isSafeInteger(Number(row[product]))) {
+        if (!Object.keys(fieldErrors.value).length) allocationProduct.value = product
+        fieldErrors.value[product + i] = 'Isi rupiah bulat minimal nol.'
+      }
+    }
+  }
   if (Object.keys(fieldErrors.value).length) {
     await nextTick()
     formElement.value?.querySelector('[aria-invalid="true"]')?.focus()
@@ -138,6 +161,7 @@ async function save() {
     await saveTargets(Number(draft.year), values, {
       requestKey: requestKey.value,
       draft: targetDraft,
+      monthly: draft.monthly,
     })
     editing.value = false
     success.value = 'Target tahun ' + draft.year + ' berhasil disimpan.'
@@ -167,33 +191,26 @@ async function save() {
   <p v-if="success" class="notice success" role="status">{{ success }}</p>
   <div v-if="dashboard" class="monitor-cards target-summary">
     <article class="panel">
-      <span>Total target {{ selectedYear }}</span
-      ><strong>{{ compactMoney(dashboard.total_target) }}</strong>
+      <span>Total target dana {{ selectedYear }}</span
+      ><strong>{{ moneyInMillions(dashboard.total_target) }}</strong>
     </article>
     <article class="panel">
-      <span>Realisasi Won</span><strong>{{ compactMoney(dashboard.realization) }}</strong>
+      <span>Realisasi dana Won</span><strong>{{ moneyInMillions(dashboard.realization) }}</strong>
     </article>
     <article class="panel">
-      <span>Pencapaian</span><strong>{{ percent(dashboard.percentage) }}</strong>
+      <span>Pencapaian target dana</span><strong>{{ percent(dashboard.percentage) }}</strong>
     </article>
   </div>
-  <section class="panel target-products-panel">
-    <div class="panel-heading">
-      <div>
-        <h2>Target dan realisasi tahunan</h2>
-      </div>
-    </div>
-    <TargetCardGrid
-      ><TargetProgress v-for="item in summary" :key="item.product" :item="item"
-    /></TargetCardGrid>
-  </section>
-  <UnitTargets />
-  <AppDrawer
-    v-if="editing"
-    title="Atur target tahunan"
-    subtitle="Target berdasarkan jenis produk"
-    @close="close"
-  >
+  <UnitTargets v-slot="{ month }">
+    <TargetProgress
+      v-for="item in summary"
+      :key="item.product"
+      :item="item"
+      :month-label="monthNames[month - 1]"
+      :monthly-target="annualTargets[selectedYear]?.monthly?.[month]?.[item.product] || 0"
+    />
+  </UnitTargets>
+  <AppDrawer v-if="editing" title="Atur target tahunan" @close="close">
     <form ref="formElement" novalidate :aria-busy="saving" @submit.prevent="save">
       <fieldset class="form-fields" :disabled="saving || uncertain">
         <div class="form-grid">
@@ -228,6 +245,27 @@ async function save() {
             ></label
           >
         </div>
+        <h3 class="allocation-heading">Target bulanan</h3>
+        <label class="allocation-picker"
+          >Produk untuk alokasi bulanan
+          <select v-model="allocationProduct">
+            <option v-for="product in products" :key="product">{{ product }}</option>
+          </select>
+        </label>
+        <div class="form-grid">
+          <label v-for="(name, i) in monthNames" :key="name">
+            {{ name }} (rupiah)
+            <MoneyInput
+              v-model="draft.monthly[i][allocationProduct]"
+              :data-target-month="i + 1"
+              :aria-label="'Target ' + allocationProduct + ' ' + name + ' (rupiah)'"
+              :aria-invalid="Boolean(fieldErrors[allocationProduct + i])"
+            />
+            <small v-if="fieldErrors[allocationProduct + i]" class="field-error">{{
+              fieldErrors[allocationProduct + i]
+            }}</small>
+          </label>
+        </div>
       </fieldset>
       <p v-if="error" class="notice error" role="alert">
         {{ error }}
@@ -246,6 +284,18 @@ async function save() {
   </AppDrawer>
 </template>
 <style scoped>
+.allocation-heading {
+  margin: 24px 0 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.allocation-picker {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
 .target-summary {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -262,19 +312,9 @@ async function save() {
   display: block;
   line-height: 1.6;
 }
-.target-products-panel {
-  padding: 0 26px 24px;
-}
-.target-products-panel > .panel-heading {
-  padding-left: 0;
-  padding-right: 0;
-}
 @media (max-width: 760px) {
   .target-summary {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .target-products-panel {
-    padding: 0 18px 18px;
   }
 }
 </style>

@@ -63,6 +63,16 @@ const products = computed(() =>
     .map((item) => item.name)
     .sort((a, b) => PRODUCT_ORDER.indexOf(a) - PRODUCT_ORDER.indexOf(b)),
 )
+const pipelineProducts = computed(() =>
+  masterProducts.value
+    .filter(
+      (item) =>
+        (item.measure === 'IDR' || ['cms', 'bale-syariah', 'qris'].includes(item.code)) &&
+        (division.value === 'all' ||
+          item.divisions?.some((entry) => entry.name === division.value)),
+    )
+    .map((item) => item.name),
+)
 const people = computed(() => masterPics.value.map((item) => item.name))
 const rows = computed(() => rowsState.value)
 const activeRows = computed(() => rows.value.filter((row) => !isClosed(row)))
@@ -99,6 +109,8 @@ const mapOpportunity = (item) => ({
   division: item.division?.name || '',
   customer: item.customer_name,
   date: item.recorded_date,
+  picId: item.pic_id ?? item.pic?.id,
+  handledByIds: (item.assignments || []).map((entry) => entry.pic_id ?? entry.pic?.id),
   pic: item.pic?.name || '',
   product: item.product?.name || '',
   segment: item.segment,
@@ -346,7 +358,7 @@ export function usePipeline() {
     const error = validatePipeline(row, {
       legacy: previous?.segment === 'Small' && row.segment === 'Small',
       people: people.value,
-      products: products.value,
+      products: pipelineProducts.value,
     })
     if (error) throw new Error(error)
     let saved
@@ -368,7 +380,7 @@ export function usePipeline() {
     } else {
       const payload = {
         division_id: context.divisionId,
-        pic_id: masterPics.value.find((item) => item.name === row.pic)?.id,
+        pic_id: row.picId,
         product_id: masterProducts.value.find((item) => item.name === row.product)?.id,
         customer_name: row.customer.trim(),
         segment: row.segment,
@@ -406,7 +418,11 @@ export function usePipeline() {
     rememberRow(saved, context)
     await afterWrite(context)
   }
-  async function saveTargets(year, values, { requestKey = crypto.randomUUID(), draft } = {}) {
+  async function saveTargets(
+    year,
+    values,
+    { requestKey = crypto.randomUUID(), draft, monthly } = {},
+  ) {
     // Kirim target produk dalam satu batch beserta version; 0 berarti record belum ada.
     requireDivision()
     requireTargetDraft(draft, year)
@@ -420,6 +436,9 @@ export function usePipeline() {
       return {
         product: product.code,
         target_value: Number(values[name]),
+        ...(monthly && {
+          monthly: monthly.map((row, i) => ({ month: i + 1, target_value: Number(row[name]) })),
+        }),
         version: Number(record?.version || 0),
       }
     })
@@ -513,6 +532,7 @@ export function usePipeline() {
     isHead,
     canEdit,
     products,
+    pipelineProducts,
     people,
     getUnitTarget,
     saveUnitTarget,

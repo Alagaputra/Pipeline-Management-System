@@ -19,6 +19,8 @@ import {
   timeLabel,
   localDate,
   isClosed,
+  isUnitPipeline,
+  opportunityValue,
 } from '../utils/pipeline'
 const props = defineProps({
   id: { type: String, default: '' },
@@ -29,8 +31,9 @@ const {
   rows,
   save,
   complete,
-  products: PRODUCTS,
+  pipelineProducts: PRODUCTS,
   people: PEOPLE,
+  picRecords,
   canEdit,
   refresh,
   storageError,
@@ -70,12 +73,13 @@ const dirty = computed(
 )
 useUnsavedChanges(dirty, saving)
 function blank() {
+  const accountId = useSession().user.value?.backendId
+  const pic = picRecords.value.find((person) => person.id === accountId) || picRecords.value[0]
   return {
     customer: '',
     date: localDate(),
-    pic: PEOPLE.value.includes(useSession().user.value?.name)
-      ? useSession().user.value.name
-      : PEOPLE.value[0],
+    pic: pic?.name,
+    picId: pic?.id,
     product: 'Tabungan',
     segment: 'Mid',
     nominal: '',
@@ -136,7 +140,14 @@ async function cancel() {
 async function submit() {
   // Alur form: normalisasi angka -> validasi field -> review closing -> simpan API.
   if (saving.value) return
-  const value = { ...form, nominal: Number(form.nominal), realization: Number(form.realization) }
+  const unit = isUnitPipeline(form.product)
+  const value = {
+    ...form,
+    pic: picRecords.value.find((person) => person.id === form.picId)?.name || '',
+    segment: unit ? '' : form.segment,
+    nominal: unit ? 1 : Number(form.nominal),
+    realization: unit && form.outcome === 'Won' ? 1 : Number(form.realization),
+  }
   fieldErrors.value = pipelineFieldErrors(value, {
     legacy: current.value?.segment === 'Small',
     people: PEOPLE.value,
@@ -238,7 +249,7 @@ async function reloadConflict() {
               : 'Catat peluang'
         : 'Detail peluang'
     "
-    :subtitle="id || 'PIPELINE FUNDING'"
+    :subtitle="id"
     @close="requestClose"
   >
     <div v-if="id && !current" class="empty-state">Peluang tidak ditemukan.</div>
@@ -251,7 +262,6 @@ async function reloadConflict() {
     >
       <section v-if="reviewing" class="closing-review" aria-label="Konfirmasi closing">
         <h3 tabindex="-1" data-review-heading>Periksa closing {{ form.outcome }}</h3>
-        <p>Pastikan hasil berikut sudah benar sebelum disimpan.</p>
         <dl class="detail-grid">
           <div class="full">
             <dt>Nasabah</dt>
@@ -270,12 +280,12 @@ async function reloadConflict() {
             <dd>{{ dateLabel(form.closedDate) }}</dd>
           </div>
           <div>
-            <dt>Nominal peluang</dt>
-            <dd>{{ money(form.nominal) }}</dd>
+            <dt>{{ isUnitPipeline(form.product) ? 'Jumlah peluang' : 'Nominal peluang' }}</dt>
+            <dd>{{ isUnitPipeline(form.product) ? '1 unit' : money(form.nominal) }}</dd>
           </div>
           <div v-if="form.outcome === 'Won'" class="full">
-            <dt>Realisasi dana</dt>
-            <dd>{{ money(form.realization) }}</dd>
+            <dt>Realisasi</dt>
+            <dd>{{ isUnitPipeline(form.product) ? '1 unit' : money(form.realization) }}</dd>
           </div>
           <div v-else class="full">
             <dt>Alasan Lost</dt>
@@ -290,7 +300,11 @@ async function reloadConflict() {
           Peluang akan masuk Riwayat dan tidak bisa diedit setelah closing disimpan.
         </p>
         <p
-          v-if="form.outcome === 'Won' && Number(form.realization) < Number(form.nominal)"
+          v-if="
+            !isUnitPipeline(form.product) &&
+            form.outcome === 'Won' &&
+            Number(form.realization) < Number(form.nominal)
+          "
           class="notice closing-note"
         >
           Closing akan menutup seluruh peluang; selisih nominal tidak dibuat menjadi peluang aktif
@@ -299,7 +313,6 @@ async function reloadConflict() {
       </section>
       <fieldset v-else class="form-fields" :disabled="saving || uncertain">
         <div v-if="!closing && !followupOnly" class="section-heading">
-          <span class="section-number">01</span>
           <div>
             <h3>Informasi peluang</h3>
           </div>
@@ -327,8 +340,15 @@ async function reloadConflict() {
             }}</small></label
           >
           <label
-            >PIC<select v-model="form.pic" aria-label="PIC" v-bind="fieldAttrs('pic')">
-              <option v-for="person in PEOPLE" :key="person">{{ person }}</option></select
+            >PIC<select v-model="form.picId" aria-label="PIC" v-bind="fieldAttrs('pic')">
+              <option v-for="person in picRecords" :key="person.id" :value="person.id">
+                {{ person.name
+                }}{{
+                  PEOPLE.filter((name) => name === person.name).length > 1
+                    ? ' (' + person.username + ')'
+                    : ''
+                }}
+              </option></select
             ><small v-if="fieldErrors.pic" :id="'error-pic'" class="field-error">{{
               fieldErrors.pic
             }}</small></label
@@ -340,7 +360,7 @@ async function reloadConflict() {
               fieldErrors.product
             }}</small></label
           >
-          <label
+          <label v-if="!isUnitPipeline(form.product)"
             >Segmentasi<select v-model="form.segment" v-bind="fieldAttrs('segment')">
               <option v-if="form.segment === 'Small'" value="Small">Small (data lama)</option>
               <option v-for="segment in SEGMENTS" :key="segment">{{ segment }}</option></select
@@ -348,7 +368,7 @@ async function reloadConflict() {
               fieldErrors.segment
             }}</small></label
           >
-          <label
+          <label v-if="!isUnitPipeline(form.product)"
             >Nominal peluang (rupiah)<MoneyInput
               v-model="form.nominal"
               aria-label="Nominal peluang (rupiah)"
@@ -359,6 +379,9 @@ async function reloadConflict() {
               fieldErrors.nominal
             }}</small></label
           >
+          <p v-if="isUnitPipeline(form.product)" class="notice closing-note">
+            Setiap peluang dihitung 1 unit.
+          </p>
           <label
             >Status ketertarikan<select v-model="form.status" v-bind="fieldAttrs('status')">
               <option v-for="status in STATUSES" :key="status">{{ status }}</option></select
@@ -370,11 +393,11 @@ async function reloadConflict() {
         <div v-if="closing || followupOnly" class="drawer-context">
           <h3>{{ current?.customer }}</h3>
           <p>
-            {{ current?.product }} · {{ compactMoney(current?.nominal || 0) }} · {{ current?.pic }}
+            {{ current?.product }} · {{ opportunityValue(current?.product, current?.nominal) }} ·
+            {{ current?.pic }}
           </p>
         </div>
         <div class="section-heading followup-section">
-          <span class="section-number">02</span>
           <div>
             <h3>{{ closing ? 'Hasil peluang' : 'Tindak lanjut' }}</h3>
           </div>
@@ -415,7 +438,7 @@ async function reloadConflict() {
               /><small v-if="fieldErrors.closedDate" :id="'error-closedDate'" class="field-error">{{
                 fieldErrors.closedDate
               }}</small></label
-            ><label v-if="form.outcome === 'Won'"
+            ><label v-if="form.outcome === 'Won' && !isUnitPipeline(form.product)"
               >Realisasi dana (rupiah)<MoneyInput
                 v-model="form.realization"
                 aria-label="Realisasi dana (rupiah)"
@@ -428,7 +451,7 @@ async function reloadConflict() {
                 class="field-error"
                 >{{ fieldErrors.realization }}</small
               ></label
-            ><label v-else class="full"
+            ><label v-else-if="form.outcome === 'Lost'" class="full"
               >Alasan Lost<textarea
                 v-model="form.lostReason"
                 required
@@ -493,7 +516,10 @@ async function reloadConflict() {
         <span class="product-icon"><AppIcon name="building" :size="25" /></span>
         <div>
           <h3>{{ current.customer }}</h3>
-          <p>{{ current.product }} · {{ current.segment }}</p>
+          <p>
+            {{ current.product
+            }}<template v-if="current.segment"> · {{ current.segment }}</template>
+          </p>
         </div>
         <StatusBadge :status="isClosed(current) ? current.outcome : current.status" />
       </div>
@@ -507,9 +533,12 @@ async function reloadConflict() {
           <dd>{{ current.pic }}</dd>
         </div>
         <div class="full">
-          <dt>Nominal peluang</dt>
-          <dd class="big-number" :title="money(current.nominal)">
-            {{ compactMoney(current.nominal) }}
+          <dt>{{ isUnitPipeline(current.product) ? 'Jumlah peluang' : 'Nominal peluang' }}</dt>
+          <dd
+            class="big-number"
+            :title="isUnitPipeline(current.product) ? '1 unit' : money(current.nominal)"
+          >
+            {{ opportunityValue(current.product, current.nominal) }}
           </dd>
         </div>
         <div>
@@ -526,8 +555,16 @@ async function reloadConflict() {
             <dd>{{ dateLabel(current.closedDate) }}</dd>
           </div>
           <div>
-            <dt>Realisasi dana</dt>
-            <dd :title="money(current.realization)">{{ compactMoney(current.realization) }}</dd>
+            <dt>{{ isUnitPipeline(current.product) ? 'Realisasi unit' : 'Realisasi dana' }}</dt>
+            <dd
+              :title="
+                isUnitPipeline(current.product)
+                  ? opportunityValue(current.product, current.realization)
+                  : money(current.realization)
+              "
+            >
+              {{ opportunityValue(current.product, current.realization) }}
+            </dd>
           </div>
           <div v-if="current.outcome === 'Lost'" class="full">
             <dt>Alasan Lost</dt>
@@ -552,7 +589,7 @@ async function reloadConflict() {
           <dd>{{ current.handledBy.join(', ') }}</dd>
         </div>
       </dl>
-      <OpportunityTimeline :id="current.id" :version="current.version" />
+      <OpportunityTimeline :id="current.id" :version="current.version" :product="current.product" />
       <p v-if="success" class="notice success" role="status">{{ success }}</p>
       <p v-if="error" class="notice error" role="alert">{{ error }}</p>
       <p v-if="!canEdit" class="notice closing-note">
@@ -583,7 +620,6 @@ async function reloadConflict() {
         </div>
         <div class="close-opportunity">
           <h3>Selesaikan peluang</h3>
-          <p>Pilih hasil setelah proses dengan nasabah berakhir.</p>
           <div class="drawer-actions">
             <button type="button" class="button won-button" @click="edit('Won')">Closing Won</button
             ><button type="button" class="button lost-button" @click="edit('Lost')">

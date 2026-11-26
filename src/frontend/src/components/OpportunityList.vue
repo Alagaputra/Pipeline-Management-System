@@ -4,9 +4,9 @@ import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import OpportunityTable from './OpportunityTable.vue'
 import OpportunityCards from './OpportunityCards.vue'
-import { STATUSES, dueState } from '../utils/pipeline'
+import { STATUSES, dueState, isUnitPipeline } from '../utils/pipeline'
 import { usePipeline } from '../composables/usePipeline'
-const { people: PEOPLE, products: PRODUCTS, loading } = usePipeline()
+const { people: PEOPLE, pipelineProducts: PRODUCTS, loading } = usePipeline()
 const props = defineProps({ rows: Array, history: Boolean, dueOnly: Boolean })
 defineEmits(['select'])
 const search = ref(''),
@@ -49,7 +49,8 @@ const filtered = computed(() =>
     })
     .sort((a, b) =>
       sort.value === 'nominal'
-        ? b.nominal - a.nominal
+        ? Number(isUnitPipeline(a.product)) - Number(isUnitPipeline(b.product)) ||
+          b.nominal - a.nominal
         : sort.value === 'followup'
           ? (a.followUpDate || '9999').localeCompare(b.followUpDate || '9999')
           : props.history

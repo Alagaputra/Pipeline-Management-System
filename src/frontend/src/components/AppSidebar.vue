@@ -100,11 +100,6 @@ onBeforeUnmount(() => {
       /></RouterLink>
     </nav>
     <div class="sidebar-bottom">
-      <div class="sidebar-tip">
-        <span class="tip-icon"><AppIcon name="growth" /></span
-        ><strong>Langkah kecil,<br />peluang besar.</strong>
-        <p>Follow-up tepat waktu untuk hasil yang lebih baik.</p>
-      </div>
       <div class="user-profile">
         <span class="avatar">{{ user?.name?.slice(0, 2).toUpperCase() }}</span
         ><span

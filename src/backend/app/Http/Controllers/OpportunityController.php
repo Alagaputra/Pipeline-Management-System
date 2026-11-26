@@ -129,6 +129,7 @@ class OpportunityController extends Controller
             ]);
             abort_if($data['version'] !== $opportunity->version, 409, 'Data telah berubah. Muat ulang.');
             if ($data['outcome'] === 'Won') {
+                if ($opportunity->product()->where('measure', 'UNIT')->exists()) $data['realization'] = 1;
                 abort_unless(($data['realization'] ?? 0) > 0, 422, 'Realisasi Won harus lebih dari nol.');
                 $data['lost_reason'] = null;
             } else {
@@ -147,15 +148,22 @@ class OpportunityController extends Controller
     {
         // Selain format input, pastikan PIC aktif dan produk rupiah tersedia di divisi.
         // Segmen Small hanya diizinkan untuk mempertahankan data lama yang sudah memakainya.
+        $product = Product::whereKey($request->input('product_id'))->where('is_active', true)
+            ->whereHas('divisions', fn ($q) => $q->whereKey($divisionId))->first();
+        abort_unless($product && ($product->measure === 'IDR' || in_array($product->code, ['cms', 'bale-syariah', 'qris'], true)), 422, 'Produk tidak tersedia untuk divisi ini.');
+        $unit = $product->measure === 'UNIT';
         $data = $request->validate([
             'pic_id' => ['required', 'integer'], 'product_id' => ['required', 'integer'],
-            'customer_name' => ['required', 'string', 'max:160'], 'segment' => ['required', Rule::in($legacySmall ? ['Small', 'Mid', 'Large'] : ['Mid', 'Large'])],
-            'nominal' => ['required', 'integer', 'min:1', 'max:9007199254740991'], 'interest_status' => ['required', Rule::in(['Cold', 'Warm', 'Hot'])],
+            'customer_name' => ['required', 'string', 'max:160'], 'segment' => [$unit ? 'nullable' : 'required', Rule::in($legacySmall ? ['Small', 'Mid', 'Large'] : ['Mid', 'Large'])],
+            'nominal' => [$unit ? 'nullable' : 'required', 'integer', 'min:1', 'max:9007199254740991'], 'interest_status' => ['required', Rule::in(['Cold', 'Warm', 'Hot'])],
             'recorded_date' => ['required', 'date', 'before_or_equal:today'], 'follow_up_date' => ['nullable', 'date', 'after_or_equal:recorded_date'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
         abort_unless(User::whereKey($data['pic_id'])->where('role', 'pic')->where('is_active', true)->where('division_id', $divisionId)->exists(), 422, 'PIC tidak tersedia untuk divisi ini.');
-        abort_unless(Product::whereKey($data['product_id'])->where('measure', 'IDR')->where('is_active', true)->whereHas('divisions', fn ($q) => $q->whereKey($divisionId))->exists(), 422, 'Produk tidak tersedia untuk divisi ini.');
+        if ($unit) {
+            $data['segment'] = '';
+            $data['nominal'] = 1;
+        }
         return $data;
     }
 }

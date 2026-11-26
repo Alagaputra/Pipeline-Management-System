@@ -7,7 +7,13 @@ import OpportunityDrawer from '../components/OpportunityDrawer.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import ProductDistribution from '../components/ProductDistribution.vue'
 import { usePipeline } from '../composables/usePipeline'
-import { compactMoney, isClosed, dateLabel } from '../utils/pipeline'
+import {
+  compactMoney,
+  isClosed,
+  isUnitPipeline,
+  opportunityValue,
+  dateLabel,
+} from '../utils/pipeline'
 import { sumAmounts, compareAmounts } from '../utils/amounts'
 import { divisionProducts } from '../data/access'
 const { rows, selectedYear, picRecords } = usePipeline()
@@ -21,22 +27,27 @@ const people = computed(() =>
   picRecords.value
     .filter((pic) => pic.name.toLowerCase().includes(search.value.toLowerCase()))
     .map((pic) => {
-      const active = rows.value.filter((row) => row.pic === pic.name && !isClosed(row))
+      const active = rows.value.filter((row) => row.picId === pic.id && !isClosed(row))
       const closed = rows.value.filter(
         (row) =>
-          row.pic === pic.name &&
+          row.picId === pic.id &&
           isClosed(row) &&
           Number(row.closedDate.slice(0, 4)) === selectedYear.value,
       )
       return {
+        id: pic.id,
         name: pic.name,
         division: pic.division?.name || '',
         active: active.length,
-        nominal: sumAmounts(active.map((row) => row.nominal)),
+        nominal: sumAmounts(
+          active.filter((row) => !isUnitPipeline(row.product)).map((row) => row.nominal),
+        ),
         won: closed.filter((row) => row.outcome === 'Won').length,
         lost: closed.filter((row) => row.outcome === 'Lost').length,
         realized: sumAmounts(
-          closed.filter((row) => row.outcome === 'Won').map((row) => row.realization),
+          closed
+            .filter((row) => row.outcome === 'Won' && !isUnitPipeline(row.product))
+            .map((row) => row.realization),
         ),
         distribution: divisionProducts(pic.division?.name).map((product) => ({
           product,
@@ -61,11 +72,11 @@ const people = computed(() =>
           : compareAmounts(b.nominal, a.nominal) || a.name.localeCompare(b.name),
     ),
 )
-const selectedPerson = computed(() => people.value.find((person) => person.name === selected.value))
+const selectedPerson = computed(() => people.value.find((person) => person.id === selected.value))
 const handled = computed(() =>
   // Detail PIC juga menampilkan peluang yang pernah ditangani sebelum dialihkan.
   rows.value
-    .filter((row) => row.pic === selected.value || row.handledBy.includes(selected.value))
+    .filter((row) => row.picId === selected.value || row.handledByIds.includes(selected.value))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
 )
 function showOpportunity(id) {
@@ -107,7 +118,7 @@ function showOpportunity(id) {
     </div>
     <article
       v-for="person in people"
-      :key="person.name"
+      :key="person.id"
       class="team-summary-row"
       :aria-label="'Ringkasan PIC ' + person.name"
     >
@@ -144,7 +155,7 @@ function showOpportunity(id) {
         type="button"
         class="button secondary"
         :aria-label="'Detail PIC ' + person.name"
-        @click="selected = person.name"
+        @click="selected = person.id"
       >
         Detail <AppIcon name="right" :size="16" />
       </button>
@@ -152,13 +163,11 @@ function showOpportunity(id) {
     <div v-if="!people.length" class="empty-state">
       <AppIcon name="search" :size="28" />
       <h3>PIC tidak ditemukan</h3>
-      <p>Coba nama PIC lain dalam divisi ini.</p>
     </div>
   </section>
   <AppDrawer
     v-if="selected && selectedPerson"
-    :title="'Detail PIC ' + selected"
-    subtitle="RINGKASAN & PELUANG"
+    :title="'Detail PIC ' + selectedPerson.name"
     @close="selected = ''"
   >
     <div class="team-detail-heading">
@@ -187,7 +196,6 @@ function showOpportunity(id) {
           ? 'Peluang aktif seluruh periode.'
           : 'Realisasi Won tahun ' + selectedYear + '.'
       }}
-      Persentase menunjukkan komposisi produk.
     </p>
     <ProductDistribution
       v-if="selectedPerson.distribution.some((item) => item.value > 0)"
@@ -201,12 +209,11 @@ function showOpportunity(id) {
     </p>
     <div class="team-handled-heading">
       <h3>Peluang pernah ditangani</h3>
-      <p>Peluang aktif maupun selesai · seluruh periode.</p>
     </div>
     <div v-for="row in handled" :key="row.id" class="pic-opportunity">
       <div>
         <button class="customer-link" @click="showOpportunity(row.id)">{{ row.customer }}</button
-        ><small>{{ row.product }} · {{ compactMoney(row.nominal) }}</small>
+        ><small>{{ row.product }} · {{ opportunityValue(row.product, row.nominal) }}</small>
       </div>
       <StatusBadge :status="isClosed(row) ? row.outcome : row.status" />
       <p>
@@ -252,6 +259,10 @@ function showOpportunity(id) {
   align-items: center;
   gap: 12px;
   min-width: 160px;
+}
+.team-summary-person > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .team-summary-person h3 {
   font-size: 15px;
@@ -341,7 +352,7 @@ function showOpportunity(id) {
     justify-content: space-between;
   }
   .team-summary-toolbar select {
-    width: 205px;
+    width: min(205px, 70%);
   }
   .team-summary-row {
     padding: 18px;

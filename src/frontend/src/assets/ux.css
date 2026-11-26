@@ -451,6 +451,15 @@ button:disabled {
   cursor: default;
 }
 @media (max-width: 420px) {
+  .workspace .table-toolbar.opportunity-toolbar {
+    flex-wrap: wrap;
+  }
+  .opportunity-toolbar .search-input {
+    flex: 1 1 180px;
+  }
+  .advanced-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .drawer-body .form-actions {
     flex-direction: column-reverse;
     align-items: stretch;

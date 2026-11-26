@@ -474,7 +474,7 @@ test('Back browser melindungi isian dengan konfirmasi yang seragam', async ({ pa
   await page.goBack()
   await confirmation.getByRole('button', { name: 'Buang perubahan', exact: true }).click()
   await expect(
-    page.getByRole('heading', { name: 'Selamat bekerja, Suci', exact: true }),
+    page.getByRole('heading', { name: 'Dashboard', exact: true }),
   ).toBeVisible()
   await expect(dialog).not.toBeVisible()
 })

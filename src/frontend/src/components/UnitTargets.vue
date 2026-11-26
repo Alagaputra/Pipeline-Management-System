@@ -1,5 +1,6 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { confirmAction } from '../composables/useConfirm'
 import { useUnsavedChanges } from '../composables/useUnsavedChanges'
 import { UNIT_PRODUCTS } from '../data/access'
@@ -10,7 +11,11 @@ import TargetCard from './TargetCard.vue'
 import TargetCardGrid from './TargetCardGrid.vue'
 import AppDrawer from './AppDrawer.vue'
 defineProps({ readOnly: { type: Boolean, default: false } })
+const formElement = ref(null)
+const route = useRoute()
+const router = useRouter()
 const {
+  dashboard,
   selectedYear,
   division,
   divisionLabel,
@@ -44,8 +49,16 @@ const entries = computed(() =>
   UNIT_PRODUCTS.filter((product) => division.value !== 'Komersil' || product === 'CMS').map(
     (product) => {
       const entry = getUnitTarget(product, selectedYear.value)
-      const realization = sumAmounts(Object.values(entry.monthly).map((item) => item.realization))
-      const monthly = entry.monthly[month.value] || { target: 0, realization: 0 }
+      const automatic = dashboard.value?.service_realizations?.[product] || {}
+      const realization = sumAmounts([
+        ...Object.values(entry.monthly).map((item) => item.realization),
+        ...Object.values(automatic),
+      ])
+      const savedMonth = entry.monthly[month.value] || { target: 0, realization: 0 }
+      const monthly = {
+        ...savedMonth,
+        realization: sumAmounts([savedMonth.realization, automatic[month.value] || 0]),
+      }
       return {
         product,
         ...entry,
@@ -64,6 +77,15 @@ const uncertain = ref(false)
 const conflict = ref(false)
 const requestKey = ref(crypto.randomUUID())
 const draft = reactive({ target: 0, monthly: {} })
+const allocationNote = computed(() => {
+  const values = [draft.target, ...Object.values(draft.monthly).map((item) => item.target)]
+  if (!values.every((value) => Number.isSafeInteger(Number(value)) && Number(value) >= 0)) return ''
+  const [annual, ...monthly] = values.map((value) => BigInt(value || 0))
+  const delta = annual - monthly.reduce((total, value) => total + value, 0n)
+  if (delta > 0n) return unit(delta) + ' belum dialokasikan ke bulan.'
+  if (delta < 0n) return 'Total bulanan melebihi target tahunan sebesar ' + unit(-delta) + '.'
+  return 'Total bulanan sesuai dengan target tahunan.'
+})
 let baseline = ''
 let targetDraft
 useUnsavedChanges(
@@ -85,6 +107,32 @@ function edit(product) {
   editing.value = product
   error.value = ''
 }
+watch(
+  () => [route.query.editUnit, route.query.year, loading.value, canEdit.value],
+  async () => {
+    const product = route.query.editUnit
+    if (!product || loading.value || !UNIT_PRODUCTS.includes(product)) return
+    if (product !== 'CMS' && !canEdit.value) return
+    const year = Number(route.query.year)
+    if (Number.isInteger(year) && year >= 2000 && year <= 2100 && year !== selectedYear.value) {
+      selectedYear.value = year
+      return
+    }
+    const requestedMonth = Number(route.query.month)
+    const monthly = Number.isInteger(requestedMonth) && requestedMonth >= 1 && requestedMonth <= 12
+    if (monthly) month.value = requestedMonth
+    edit(product)
+    const query = { ...route.query }
+    delete query.month
+    delete query.editUnit
+    delete query.year
+    await router.replace({ query })
+    await nextTick()
+    if (monthly)
+      formElement.value?.querySelector(`[data-target-month="${requestedMonth}"]`)?.focus()
+  },
+  { immediate: true },
+)
 async function close() {
   if (saving.value) return
   if ((!uncertain.value && JSON.stringify(draft) === baseline) || (await confirmAction()))
@@ -148,11 +196,11 @@ async function save() {
   <section class="panel unit-target-panel" aria-label="Target layanan dalam unit">
     <div class="panel-heading">
       <div>
-        <h2>Target layanan {{ selectedYear }}</h2>
+        <h2>Target dan realisasi per produk {{ selectedYear }}</h2>
       </div>
       <div class="unit-heading-actions">
         <label
-          >Bulan<select v-model.number="month" aria-label="Bulan target unit">
+          >Bulan target<select v-model.number="month" aria-label="Bulan target unit">
             <option v-for="(name, i) in months" :key="name" :value="i + 1">{{ name }}</option>
           </select></label
         >
@@ -163,11 +211,13 @@ async function save() {
     </div>
     <p v-if="success" class="notice success" role="status">{{ success }}</p>
     <TargetCardGrid class="unit-cards">
+      <slot :month="month" />
       <TargetCard
         v-for="entry in entries"
         :key="entry.product"
         :item="entry"
         unit
+        class="service-target-card"
         :label="'Target unit ' + entry.product"
         :badge="entry.product === 'CMS' ? 'Bersama' : 'Per divisi'"
       >
@@ -184,6 +234,12 @@ async function save() {
         <p class="service-month-percentage">
           Pencapaian bulan:
           {{ percent(percentage(entry.monthly.realization, entry.monthly.target)) }}
+        </p>
+        <p
+          v-if="['CMS', 'Bale Syariah', 'QRIS'].includes(entry.product)"
+          class="service-month-percentage"
+        >
+          Realisasi mencakup data manual dan pipeline Won.
         </p>
         <template #actions v-if="!readOnly">
           <button
@@ -205,7 +261,7 @@ async function save() {
     :subtitle="selectedYear + ' · ' + (editing === 'CMS' ? 'BERSAMA KEDUA DIVISI' : divisionLabel)"
     @close="close"
   >
-    <form :aria-busy="saving" @submit.prevent="save">
+    <form ref="formElement" :aria-busy="saving" @submit.prevent="save">
       <fieldset class="form-fields" :disabled="saving || uncertain">
         <label class="unit-annual-input"
           >Target tahunan {{ editing }} (unit)<input
@@ -216,13 +272,13 @@ async function save() {
             step="1"
             required
         /></label>
+        <p aria-live="polite">{{ allocationNote }}</p>
         <div class="month-form-scroll">
           <table class="month-form-table">
             <thead>
               <tr>
                 <th>Bulan</th>
                 <th>Target (unit)</th>
-                <th>Realisasi (unit)</th>
               </tr>
             </thead>
             <tbody>
@@ -231,18 +287,8 @@ async function save() {
                 <td>
                   <input
                     v-model="draft.monthly[i + 1].target"
+                    :data-target-month="i + 1"
                     :aria-label="'Target ' + editing + ' ' + name + ' (unit)'"
-                    type="number"
-                    min="0"
-                    max="9007199254740991"
-                    step="1"
-                    required
-                  />
-                </td>
-                <td>
-                  <input
-                    v-model="draft.monthly[i + 1].realization"
-                    :aria-label="'Realisasi ' + editing + ' ' + name + ' (unit)'"
                     type="number"
                     min="0"
                     max="9007199254740991"

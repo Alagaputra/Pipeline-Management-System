@@ -84,6 +84,33 @@ class ReportReliabilityTest extends TestCase
         $this->assertStringContainsString('"active_nominal":"9007199254740993"', $response->getContent());
     }
 
+    public function test_daily_report_uses_recorded_and_closing_dates_and_respects_division(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $suci = User::where('username', 'suci')->firstOrFail();
+        $nisa = User::where('username', 'nisa')->firstOrFail();
+        $product = Product::where('code', 'tabungan')->value('id');
+        foreach ([[$suci, 120], [$nisa, 500]] as [$user, $amount]) {
+            Sanctum::actingAs($user);
+            $id = $this->postJson('/api/opportunities', [
+                'pic_id' => $user->id, 'product_id' => $product,
+                'customer_name' => 'Daily report', 'segment' => 'Mid', 'nominal' => $amount,
+                'interest_status' => 'Hot', 'recorded_date' => '2024-02-28',
+            ])->assertCreated()->json('id');
+            $this->postJson('/api/opportunities/'.$id.'/closing', [
+                'version' => 1, 'outcome' => 'Won', 'closed_date' => '2024-02-29', 'realization' => $amount,
+            ])->assertOk();
+        }
+        Sanctum::actingAs($suci);
+        $response = $this->getJson('/api/dashboard?year=2024')->assertOk()->assertJsonCount(366, 'daily');
+        $response->assertJsonPath('daily.58.date', '2024-02-28')
+            ->assertJsonPath('daily.58.recorded_nominal', 120)
+            ->assertJsonPath('daily.58.realization', 0)
+            ->assertJsonPath('daily.59.date', '2024-02-29')
+            ->assertJsonPath('daily.59.recorded_nominal', 0)
+            ->assertJsonPath('daily.59.realization', 120);
+    }
+
     public function test_production_reseed_preserves_disabled_products_and_custom_relations(): void
     {
         $this->seed(DatabaseSeeder::class);

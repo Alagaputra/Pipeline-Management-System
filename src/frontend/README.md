@@ -13,7 +13,13 @@ npm.cmd test
 
 Backend berjalan di port 8000; Vite meneruskan `/api` ke backend. Browser menyimpan token login, sedangkan data operasional berada di PostgreSQL.
 
-Dashboard dan Target menggunakan ringkasan backend. Grafik Chart.js menampilkan target/realisasi, komposisi Cold/Warm/Hot, dan nominal peluang/realisasi per bulan. Target dana ditampilkan tahunan per produk. Target layanan Bale Syariah dan QRIS tersedia untuk Konsumer, sedangkan CMS merupakan target bersama kedua divisi. Ketiganya ditampilkan dalam unit pada Dashboard dan dapat dikelola di halaman Target, termasuk target dan realisasi bulanannya. Detail opportunity menampilkan riwayat perkembangan untuk peluang aktif maupun closing.
+## Dashboard, Pipeline, dan Target
+
+- Dashboard menampilkan realisasi dana Won dalam juta rupiah, realisasi layanan Won dalam unit, dan potensi dana aktif. Grafik bulanan membandingkan nominal yang dicatat dan realisasi pada tanggal closing. Diagram lingkaran menunjukkan ketertarikan nasabah untuk peluang aktif.
+- Progres target ditampilkan per produk. Mode **Tahunan** memakai seluruh tahun laporan. Mode **Bulanan** memakai target dan realisasi bulan pilihan. Tombol **Tetapkan target** membuka form untuk produk dan tahun tersebut. Pada mode bulanan, fokus langsung menuju kolom bulan pilihan.
+- Saat mencatat pipeline dana, masukkan nominal dalam rupiah. Satu peluang Bale Syariah, QRIS, atau CMS mewakili satu unit tanpa segmentasi. Jika dua PIC bernama sama, pilih berdasarkan username. Form menyimpan ID akun yang dipilih.
+- Pada halaman Target, kartu dana menampilkan jumlah dalam juta rupiah. Form target menerima nilai tahunan dan alokasi bulanan dalam rupiah penuh atau unit sesuai produk. Bale Syariah dan QRIS tersedia untuk Konsumer, sedangkan CMS memakai satu target bersama lintas divisi.
+- Closing Won menambah realisasi pada bulan closing. Untuk layanan, pencapaian target mencakup unit Won dan jumlah manual yang telah tersimpan. Kartu realisasi unit Won di dashboard menghitung pipeline Won saja.
 
 Tes browser: `npm.cmd run test:e2e`. Siapkan PostgreSQL `pipeline_funding_test` beserta migration/seed dahulu. Tes memakai port 8001 dan 5174; database aplikasi tidak diubah. `PIPELINE_API_TARGET` dapat mengganti tujuan proxy saat pengujian.
 
@@ -21,11 +27,9 @@ Lihat [panduan proyek](../../README.md). Pemetaan proposal dan dokumentasi tamba
 
 Formulir peluang dan target menampilkan pemisah ribuan saat mengetik, validasi di bawah kolom, serta pengaman simpan ganda. Closing Won/Lost memerlukan pemeriksaan ringkasan sebelum konfirmasi. Rincian setiap kejadian di riwayat dapat dibuka sesuai kebutuhan.
 
-Pencarian, filter, urutan, dan halaman daftar tersimpan pada query URL (di dalam hash route), sehingga pulih setelah refresh atau navigasi kembali. Target yang belum ditetapkan di Dashboard memiliki tautan langsung ke formulir produk dan tahun yang dipilih.
+Pencarian, filter, urutan, dan halaman daftar tersimpan pada query URL (di dalam hash route), sehingga pulih setelah refresh atau navigasi kembali.
 
 Snapshot sebelum perubahan formulir dan cadangan desain awal disimpan secara lokal di `../../arsip-lokal/`, di bawah direktori `files/backups/` pada arsip perapian. Folder tersebut tidak disertakan di Git; `manifest.json` pada arsip mencatat lokasi asal dan checksum setiap berkas.
-
-Dashboard dan halaman Target menggunakan komponen TargetCard yang sama untuk dana dan layanan di Komersil maupun Konsumer. Urutan informasi selalu pencapaian tahunan, target, realisasi, progress bar, dan sisa target. Grid menyesuaikan jumlah produk; jenis produk dan izin tetap mengikuti divisi, dengan CMS bersama.
 
 ## Sesi dan hak akses
 
@@ -40,7 +44,7 @@ divisi; backend tetap menjadi sumber aturan otorisasi.
 
 - Pilih tahun dari filter halaman sebelum membuka form target. Kolom tahun di
   dalam form target dana hanya untuk dibaca.
-- Form peluang, target dana, target layanan, dan realisasi bulanan mempertahankan
+- Form peluang, target dana, dan target layanan mempertahankan
   versi ketika form dibuka. Pembaruan state tidak mengganti versi draft lama.
 - Perubahan divisi/tahun saat form target terbuka memblokir penyimpanan sampai
   data dimuat ulang. Konflik versi menghasilkan 409 dan tombol **Muat data terbaru**.
@@ -71,7 +75,7 @@ integer aman JavaScript, tampilan rupiah memakai nilai lengkap.
 konflik versi target rupiah dan unit, serta perubahan konteks divisi/tahun.
 Tes tambahan memverifikasi presisi total besar, respons rusak, isolasi sesi,
 dan retry closing setelah refresh. Suite browser mencakup navigasi riwayat
-serta respons HTML 200 tanpa kehilangan draft.
+serta respons HTML 200 tanpa kehilangan draft. Tes browser juga memeriksa penyimpanan ID untuk dua pilihan PIC bernama sama dan fokus isian April untuk Deposito serta CMS.
 Hasil verifikasi dan batas pemeriksaan terakhir tersedia pada
 [README utama](../../README.md#build-dan-pengujian).
 
