@@ -210,8 +210,12 @@ async function save() {
       </div>
     </div>
     <p v-if="success" class="notice success" role="status">{{ success }}</p>
+    <template v-if="$slots.default">
+      <h3 class="product-group-heading">Dana</h3>
+      <TargetCardGrid class="unit-cards"><slot :month="month" /></TargetCardGrid>
+    </template>
+    <h3 class="product-group-heading">Layanan</h3>
     <TargetCardGrid class="unit-cards">
-      <slot :month="month" />
       <TargetCard
         v-for="entry in entries"
         :key="entry.product"
@@ -235,12 +239,6 @@ async function save() {
           Pencapaian bulan:
           {{ percent(percentage(entry.monthly.realization, entry.monthly.target)) }}
         </p>
-        <p
-          v-if="['CMS', 'Bale Syariah', 'QRIS'].includes(entry.product)"
-          class="service-month-percentage"
-        >
-          Realisasi mencakup data manual dan pipeline Won.
-        </p>
         <template #actions v-if="!readOnly">
           <button
             v-if="entry.product === 'CMS' ? canEdit || isHead : canEdit"
@@ -254,6 +252,7 @@ async function save() {
         </template>
       </TargetCard>
     </TargetCardGrid>
+    <p class="unit-footnote">Realisasi layanan mencakup data manual dan pipeline Won.</p>
   </section>
   <AppDrawer
     v-if="!readOnly && editing"
@@ -318,6 +317,15 @@ async function save() {
   </AppDrawer>
 </template>
 <style scoped>
+.product-group-heading {
+  margin: 0 26px 10px;
+  font-size: 15px;
+}
+.unit-footnote {
+  margin: 0 26px 18px;
+  font-size: 12px;
+  color: #716b80;
+}
 .unit-cards {
   margin: 0 26px 24px;
 }
@@ -374,6 +382,10 @@ async function save() {
   .unit-heading-actions select {
     flex: 1;
     max-width: 220px;
+  }
+  .product-group-heading,
+  .unit-footnote {
+    margin-inline: 18px;
   }
   .unit-cards {
     margin: 0 18px 18px;
